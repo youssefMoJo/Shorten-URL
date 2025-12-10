@@ -8,8 +8,8 @@
     "default_popup": "popup.html"
   },
   "icons": {
-    "16": "youssef.png",
-    "48": "youssef.png",  
-    "128": "youssef.png"  
+    "16": "logo3.png",
+    "48": "logo3.png",
+    "128": "logo3.png"
   }
 }

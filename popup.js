@@ -29,56 +29,58 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   // Get the current tab's URL and display it
-  chrome.tabs.query({ active: true, currentWindow: true }, async function (tabs) {
-    const url = tabs[0].url;
-    loadingContainer.style.display = "block";
+  chrome.tabs.query(
+    { active: true, currentWindow: true },
+    async function (tabs) {
+      const url = tabs[0].url;
+      loadingContainer.style.display = "block";
 
-    // Make the API request to shorten the URL
-    const shortURL = await getShortURL(url);
+      // Make the API request to shorten the URL
+      const shortURL = await getShortURL(url);
 
-    // Hide the loading indicator
-    loadingContainer.style.display = "none";
+      // Hide the loading indicator
+      loadingContainer.style.display = "none";
 
-    if (shortURL) {
-      // Create an anchor element for the short URL
-      const shortURLLink = document.createElement("a");
-      shortURLLink.href = shortURL;
-      shortURLLink.textContent = shortURL;
-      shortURLLink.target = "_blank"; // Open in a new tab
+      if (shortURL) {
+        // Create an anchor element for the short URL
+        const shortURLLink = document.createElement("a");
+        shortURLLink.href = shortURL;
+        shortURLLink.textContent = shortURL;
+        shortURLLink.target = "_blank"; // Open in a new tab
 
-      // Append the anchor element to the display container
-      urlDisplay.appendChild(shortURLLink);
+        // Append the anchor element to the display container
+        urlDisplay.appendChild(shortURLLink);
 
-      // Add a signature element below the button
-      const signature = document.createElement("div");
-      signature.textContent = "by Youssef Mohamed";
-      signature.classList.add("signature"); // Apply CSS class
+        // Add a signature element below the button
+        const signature = document.createElement("div");
+        signature.textContent = "by Youssef Mohamed";
+        signature.classList.add("signature"); // Apply CSS class
 
-      // Append the signature element below the "Copy Link" button
-      copyButton.parentNode.insertBefore(signature, copyButton.nextSibling);
+        // Append the signature element below the "Copy Link" button
+        copyButton.parentNode.insertBefore(signature, copyButton.nextSibling);
 
-      copyButton.style.display = "block";
+        copyButton.style.display = "block";
 
-      // Copy the short URL to the clipboard when the button is clicked
-      copyButton.addEventListener("click", function () {
-        const input = document.createElement("input");
-        input.value = shortURL;
-        document.body.appendChild(input);
-        input.select();
-        document.execCommand("copy");
-        document.body.removeChild(input);
+        // Copy the short URL to the clipboard when the button is clicked
+        copyButton.addEventListener("click", function () {
+          const input = document.createElement("input");
+          input.value = shortURL;
+          document.body.appendChild(input);
+          input.select();
+          document.execCommand("copy");
+          document.body.removeChild(input);
 
-        // Change the button text to "Copied" temporarily
-        copyButton.textContent = "Copied";
+          // Change the button text to "Copied" temporarily
+          copyButton.textContent = "Copied";
 
-        // Set a timeout to revert the button text to "Copy Link" after 3 seconds
-        setTimeout(function () {
-          copyButton.textContent = "Copy Link";
-        }, 1000);
-        
-      });
-    } else {
-      urlDisplay.textContent = "Failed to shorten URL";
+          // Set a timeout to revert the button text to "Copy Link" after 3 seconds
+          setTimeout(function () {
+            copyButton.textContent = "Copy Link";
+          }, 1000);
+        });
+      } else {
+        urlDisplay.textContent = "Failed to shorten URL";
+      }
     }
-  });
+  );
 });

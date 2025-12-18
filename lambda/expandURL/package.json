@@ -1,0 +1,18 @@
+{
+  "name": "expandurl",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.955.0",
+    "@aws-sdk/lib-dynamodb": "^3.955.0",
+    "aws-sdk": "^2.1693.0"
+  },
+  "description": ""
+}

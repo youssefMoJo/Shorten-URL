@@ -1,0 +1,314 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 380px;
+  min-height: 480px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  overflow-x: hidden;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 480px;
+  padding: 0;
+  position: relative;
+}
+
+/* Header Section */
+.header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 32px 24px 24px;
+  text-align: center;
+  color: white;
+  position: relative;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.icon-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  margin-bottom: 16px;
+  animation: fadeInDown 0.6s ease-out;
+}
+
+.link-icon {
+  width: 28px;
+  height: 28px;
+  color: white;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+  animation: fadeInDown 0.6s ease-out 0.1s both;
+}
+
+.subtitle {
+  font-size: 14px;
+  font-weight: 400;
+  opacity: 0.9;
+  animation: fadeInDown 0.6s ease-out 0.2s both;
+}
+
+/* Content Section */
+.content {
+  flex: 1;
+  background: white;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Loading Container */
+.loading-container {
+  display: none;
+  background: white;
+  padding: 48px 24px;
+  flex: 1;
+}
+
+.loader-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.loader {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #f0f0f0;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-text {
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Short URL Container */
+.short-url-container {
+  background: linear-gradient(135deg, #f6f8fb 0%, #f0f2f7 100%);
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  animation: slideUp 0.5s ease-out;
+}
+
+.short-url-container:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+  transform: translateY(-2px);
+}
+
+.short-url-container a {
+  color: #667eea;
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 600;
+  word-break: break-all;
+  transition: all 0.2s ease;
+  display: block;
+  width: 100%;
+  position: relative;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.short-url-container a:hover {
+  color: #764ba2;
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.short-url-container a:active {
+  transform: scale(0.98);
+}
+
+.short-url-container.error {
+  background: linear-gradient(135deg, #fee 0%, #fdd 100%);
+  border-color: #fca5a5;
+  color: #dc2626;
+  font-weight: 500;
+  cursor: default;
+  pointer-events: none;
+}
+
+.short-url-container.error:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: #fca5a5;
+}
+
+/* Copy Button */
+.copy-button {
+  display: none;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 14px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  font-family: 'Inter', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  animation: slideUp 0.6s ease-out 0.1s both;
+}
+
+.copy-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.copy-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.copy-button.copied {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.button-icon {
+  width: 18px;
+  height: 18px;
+  color: white;
+}
+
+/* Footer */
+.footer {
+  background: white;
+  padding: 16px 24px 24px;
+  text-align: center;
+  border-top: 1px solid #f3f4f6;
+}
+
+.signature {
+  font-size: 12px;
+  color: #9ca3af;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  animation: fadeIn 0.6s ease-out 0.3s both;
+}
+
+.signature a {
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.signature a:hover {
+  color: #764ba2;
+}
+
+.signature a::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 1px;
+  bottom: -2px;
+  left: 0;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  transition: width 0.3s ease;
+}
+
+.signature a:hover::after {
+  width: 100%;
+}
+
+/* Animations */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #667eea;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #764ba2;
+}

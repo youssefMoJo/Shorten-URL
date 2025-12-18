@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Shorten URL",
+  "version": "1.0",
+  "description": "Generate & share concise URLs with the Short URL Extension. Click, copy, and share favorite web pages easily!",
+  "permissions": ["activeTab"],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "icons": {
+    "16": "logo4.png",
+    "48": "logo4.png",
+    "128": "logo4.png"
+  }
+}

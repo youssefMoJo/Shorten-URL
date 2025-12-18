@@ -1,0 +1,29 @@
+# Example Terraform Variables File
+# Copy this file to terraform.tfvars and customize for your environment
+# cp terraform.tfvars.example terraform.tfvars
+
+# Environment name
+environment = "dev"
+
+# AWS Region
+aws_region = "ca-central-1"
+
+# DynamoDB table name
+dynamodb_table_name = "shortenurl-dev"
+
+# Lambda configuration
+lambda_runtime     = "nodejs20.x"
+lambda_timeout     = 30
+lambda_memory_size = 256
+
+# Project name for resource naming
+project_name = "url-shortener"
+
+# Tags for all resources
+tags = {
+  Project     = "url-shortener"
+  Environment = "dev"
+  ManagedBy   = "terraform"
+  Team        = "your-team-name"
+  Owner       = "your-name"
+}

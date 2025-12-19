@@ -13,6 +13,10 @@ export const handler = async (event) => {
     if (!shortCode) {
       return {
         statusCode: 400,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ error: "Missing short code" }),
       };
     }
@@ -21,7 +25,7 @@ export const handler = async (event) => {
       new GetCommand({
         TableName: process.env.TABLE_NAME,
         Key: {
-          ShortenedURL: shortCode,
+          ShortCode: shortCode,
         },
       })
     );
@@ -29,6 +33,10 @@ export const handler = async (event) => {
     if (!result.Item || !result.Item.OriginalURL) {
       return {
         statusCode: 404,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ error: "URL not found" }),
       };
     }
@@ -37,6 +45,7 @@ export const handler = async (event) => {
       statusCode: 302,
       headers: {
         Location: result.Item.OriginalURL,
+        "Access-Control-Allow-Origin": "*",
       },
     };
   } catch (error) {
@@ -44,6 +53,10 @@ export const handler = async (event) => {
 
     return {
       statusCode: 500,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({ error: "Internal server error" }),
     };
   }

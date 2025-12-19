@@ -1,14 +1,34 @@
 resource "aws_dynamodb_table" "url_mappings" {
   name           = var.dynamodb_table_name
   billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "ShortenedURL"
+  hash_key       = "ShortCode"
 
+  # Primary key attribute
   attribute {
-    name = "ShortenedURL"
+    name = "ShortCode"
     type = "S"
   }
 
-  # Enable point-in-time recovery for data protection in dev
+  # GSI attributes
+  attribute {
+    name = "UserId"
+    type = "S"
+  }
+
+  attribute {
+    name = "CreatedAt"
+    type = "N"
+  }
+
+  # Global Secondary Index for querying user's links
+  global_secondary_index {
+    name            = "UserIdIndex"
+    hash_key        = "UserId"
+    range_key       = "CreatedAt"
+    projection_type = "ALL"
+  }
+
+  # Enable point-in-time recovery for data protection
   point_in_time_recovery {
     enabled = true
   }

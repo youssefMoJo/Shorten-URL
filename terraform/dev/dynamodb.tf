@@ -20,11 +20,24 @@ resource "aws_dynamodb_table" "url_mappings" {
     type = "N"
   }
 
+  attribute {
+    name = "OriginalURL"
+    type = "S"
+  }
+
   # Global Secondary Index for querying user's links
   global_secondary_index {
     name            = "UserIdIndex"
     hash_key        = "UserId"
     range_key       = "CreatedAt"
+    projection_type = "ALL"
+  }
+
+  # Global Secondary Index for deduplication by UserId and OriginalURL
+  global_secondary_index {
+    name            = "UserIdOriginalURLIndex"
+    hash_key        = "UserId"
+    range_key       = "OriginalURL"
     projection_type = "ALL"
   }
 

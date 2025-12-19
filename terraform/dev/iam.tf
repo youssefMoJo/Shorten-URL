@@ -56,6 +56,30 @@ resource "aws_iam_role_policy" "lambda_dynamodb_policy" {
   })
 }
 
+# Cognito Access Policy for Lambda (for auth endpoints)
+resource "aws_iam_role_policy" "lambda_cognito_policy" {
+  name = "${var.project_name}-${var.environment}-lambda-cognito-policy"
+  role = aws_iam_role.lambda_execution_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "cognito-idp:SignUp",
+          "cognito-idp:AdminConfirmSignUp",
+          "cognito-idp:InitiateAuth",
+          "cognito-idp:AdminInitiateAuth",
+          "cognito-idp:AdminGetUser",
+          "cognito-idp:AdminSetUserPassword"
+        ]
+        Resource = aws_cognito_user_pool.url_shortener.arn
+      }
+    ]
+  })
+}
+
 # IAM Role for API Gateway CloudWatch Logging
 resource "aws_iam_role" "api_gateway_cloudwatch_role" {
   name = "${var.project_name}-${var.environment}-api-gateway-cloudwatch-role"

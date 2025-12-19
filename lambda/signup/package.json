@@ -1,0 +1,10 @@
+{
+  "name": "signup-lambda",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Lambda function for user signup with Cognito",
+  "main": "index.js",
+  "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.721.0"
+  }
+}

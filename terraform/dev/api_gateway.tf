@@ -15,6 +15,16 @@ resource "aws_api_gateway_rest_api" "url_shortener" {
   )
 }
 
+# Cognito Authorizer for API Gateway
+resource "aws_api_gateway_authorizer" "cognito" {
+  name          = "${var.project_name}-${var.environment}-cognito-authorizer"
+  type          = "COGNITO_USER_POOLS"
+  rest_api_id   = aws_api_gateway_rest_api.url_shortener.id
+  provider_arns = [aws_cognito_user_pool.url_shortener.arn]
+
+  identity_source = "method.request.header.Authorization"
+}
+
 # /shorten resource
 resource "aws_api_gateway_resource" "shorten" {
   rest_api_id = aws_api_gateway_rest_api.url_shortener.id
@@ -74,6 +84,96 @@ resource "aws_api_gateway_integration" "expand_lambda" {
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = aws_lambda_function.expand_url.invoke_arn
+}
+
+# /auth resource (for authentication endpoints)
+resource "aws_api_gateway_resource" "auth" {
+  rest_api_id = aws_api_gateway_rest_api.url_shortener.id
+  parent_id   = aws_api_gateway_rest_api.url_shortener.root_resource_id
+  path_part   = "auth"
+}
+
+# /auth/signup resource
+resource "aws_api_gateway_resource" "auth_signup" {
+  rest_api_id = aws_api_gateway_rest_api.url_shortener.id
+  parent_id   = aws_api_gateway_resource.auth.id
+  path_part   = "signup"
+}
+
+# POST method for /auth/signup
+resource "aws_api_gateway_method" "auth_signup_post" {
+  rest_api_id   = aws_api_gateway_rest_api.url_shortener.id
+  resource_id   = aws_api_gateway_resource.auth_signup.id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+# Integration for /auth/signup POST
+resource "aws_api_gateway_integration" "auth_signup_lambda" {
+  rest_api_id             = aws_api_gateway_rest_api.url_shortener.id
+  resource_id             = aws_api_gateway_resource.auth_signup.id
+  http_method             = aws_api_gateway_method.auth_signup_post.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.signup.invoke_arn
+}
+
+# /auth/login resource
+resource "aws_api_gateway_resource" "auth_login" {
+  rest_api_id = aws_api_gateway_rest_api.url_shortener.id
+  parent_id   = aws_api_gateway_resource.auth.id
+  path_part   = "login"
+}
+
+# POST method for /auth/login
+resource "aws_api_gateway_method" "auth_login_post" {
+  rest_api_id   = aws_api_gateway_rest_api.url_shortener.id
+  resource_id   = aws_api_gateway_resource.auth_login.id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+# Integration for /auth/login POST
+resource "aws_api_gateway_integration" "auth_login_lambda" {
+  rest_api_id             = aws_api_gateway_rest_api.url_shortener.id
+  resource_id             = aws_api_gateway_resource.auth_login.id
+  http_method             = aws_api_gateway_method.auth_login_post.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.login.invoke_arn
+}
+
+# /me resource (for authenticated user endpoints)
+resource "aws_api_gateway_resource" "me" {
+  rest_api_id = aws_api_gateway_rest_api.url_shortener.id
+  parent_id   = aws_api_gateway_rest_api.url_shortener.root_resource_id
+  path_part   = "me"
+}
+
+# /me/links resource
+resource "aws_api_gateway_resource" "me_links" {
+  rest_api_id = aws_api_gateway_rest_api.url_shortener.id
+  parent_id   = aws_api_gateway_resource.me.id
+  path_part   = "links"
+}
+
+# GET method for /me/links (authenticated only)
+resource "aws_api_gateway_method" "me_links_get" {
+  rest_api_id   = aws_api_gateway_rest_api.url_shortener.id
+  resource_id   = aws_api_gateway_resource.me_links.id
+  http_method   = "GET"
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.cognito.id
+}
+
+# Integration for /me/links GET
+resource "aws_api_gateway_integration" "me_links_lambda" {
+  rest_api_id             = aws_api_gateway_rest_api.url_shortener.id
+  resource_id             = aws_api_gateway_resource.me_links.id
+  http_method             = aws_api_gateway_method.me_links_get.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.get_user_links.invoke_arn
 }
 
 # Enable CORS for /shorten
@@ -174,6 +274,153 @@ resource "aws_api_gateway_integration_response" "expand_options" {
   }
 }
 
+# Enable CORS for /auth/signup
+resource "aws_api_gateway_method" "auth_signup_options" {
+  rest_api_id   = aws_api_gateway_rest_api.url_shortener.id
+  resource_id   = aws_api_gateway_resource.auth_signup.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "auth_signup_options" {
+  rest_api_id = aws_api_gateway_rest_api.url_shortener.id
+  resource_id = aws_api_gateway_resource.auth_signup.id
+  http_method = aws_api_gateway_method.auth_signup_options.http_method
+  type        = "MOCK"
+
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+
+resource "aws_api_gateway_method_response" "auth_signup_options" {
+  rest_api_id = aws_api_gateway_rest_api.url_shortener.id
+  resource_id = aws_api_gateway_resource.auth_signup.id
+  http_method = aws_api_gateway_method.auth_signup_options.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+
+  response_models = {
+    "application/json" = "Empty"
+  }
+}
+
+resource "aws_api_gateway_integration_response" "auth_signup_options" {
+  rest_api_id = aws_api_gateway_rest_api.url_shortener.id
+  resource_id = aws_api_gateway_resource.auth_signup.id
+  http_method = aws_api_gateway_method.auth_signup_options.http_method
+  status_code = aws_api_gateway_method_response.auth_signup_options.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+    "method.response.header.Access-Control-Allow-Methods" = "'POST,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
+  }
+}
+
+# Enable CORS for /auth/login
+resource "aws_api_gateway_method" "auth_login_options" {
+  rest_api_id   = aws_api_gateway_rest_api.url_shortener.id
+  resource_id   = aws_api_gateway_resource.auth_login.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "auth_login_options" {
+  rest_api_id = aws_api_gateway_rest_api.url_shortener.id
+  resource_id = aws_api_gateway_resource.auth_login.id
+  http_method = aws_api_gateway_method.auth_login_options.http_method
+  type        = "MOCK"
+
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+
+resource "aws_api_gateway_method_response" "auth_login_options" {
+  rest_api_id = aws_api_gateway_rest_api.url_shortener.id
+  resource_id = aws_api_gateway_resource.auth_login.id
+  http_method = aws_api_gateway_method.auth_login_options.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+
+  response_models = {
+    "application/json" = "Empty"
+  }
+}
+
+resource "aws_api_gateway_integration_response" "auth_login_options" {
+  rest_api_id = aws_api_gateway_rest_api.url_shortener.id
+  resource_id = aws_api_gateway_resource.auth_login.id
+  http_method = aws_api_gateway_method.auth_login_options.http_method
+  status_code = aws_api_gateway_method_response.auth_login_options.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+    "method.response.header.Access-Control-Allow-Methods" = "'POST,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
+  }
+}
+
+# Enable CORS for /me/links
+resource "aws_api_gateway_method" "me_links_options" {
+  rest_api_id   = aws_api_gateway_rest_api.url_shortener.id
+  resource_id   = aws_api_gateway_resource.me_links.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "me_links_options" {
+  rest_api_id = aws_api_gateway_rest_api.url_shortener.id
+  resource_id = aws_api_gateway_resource.me_links.id
+  http_method = aws_api_gateway_method.me_links_options.http_method
+  type        = "MOCK"
+
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+
+resource "aws_api_gateway_method_response" "me_links_options" {
+  rest_api_id = aws_api_gateway_rest_api.url_shortener.id
+  resource_id = aws_api_gateway_resource.me_links.id
+  http_method = aws_api_gateway_method.me_links_options.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+
+  response_models = {
+    "application/json" = "Empty"
+  }
+}
+
+resource "aws_api_gateway_integration_response" "me_links_options" {
+  rest_api_id = aws_api_gateway_rest_api.url_shortener.id
+  resource_id = aws_api_gateway_resource.me_links.id
+  http_method = aws_api_gateway_method.me_links_options.http_method
+  status_code = aws_api_gateway_method_response.me_links_options.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+    "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
+  }
+}
+
 # API Gateway Deployment
 resource "aws_api_gateway_deployment" "url_shortener" {
   rest_api_id = aws_api_gateway_rest_api.url_shortener.id
@@ -181,8 +428,14 @@ resource "aws_api_gateway_deployment" "url_shortener" {
   depends_on = [
     aws_api_gateway_integration.shorten_lambda,
     aws_api_gateway_integration.expand_lambda,
+    aws_api_gateway_integration.me_links_lambda,
+    aws_api_gateway_integration.auth_signup_lambda,
+    aws_api_gateway_integration.auth_login_lambda,
     aws_api_gateway_integration.shorten_options,
-    aws_api_gateway_integration.expand_options
+    aws_api_gateway_integration.expand_options,
+    aws_api_gateway_integration.me_links_options,
+    aws_api_gateway_integration.auth_signup_options,
+    aws_api_gateway_integration.auth_login_options
   ]
 
   lifecycle {
@@ -194,10 +447,22 @@ resource "aws_api_gateway_deployment" "url_shortener" {
       aws_api_gateway_resource.shorten.id,
       aws_api_gateway_resource.expand.id,
       aws_api_gateway_resource.expand_short.id,
+      aws_api_gateway_resource.me.id,
+      aws_api_gateway_resource.me_links.id,
+      aws_api_gateway_resource.auth.id,
+      aws_api_gateway_resource.auth_signup.id,
+      aws_api_gateway_resource.auth_login.id,
       aws_api_gateway_method.shorten_post.id,
       aws_api_gateway_method.expand_get.id,
+      aws_api_gateway_method.me_links_get.id,
+      aws_api_gateway_method.auth_signup_post.id,
+      aws_api_gateway_method.auth_login_post.id,
       aws_api_gateway_integration.shorten_lambda.id,
       aws_api_gateway_integration.expand_lambda.id,
+      aws_api_gateway_integration.me_links_lambda.id,
+      aws_api_gateway_integration.auth_signup_lambda.id,
+      aws_api_gateway_integration.auth_login_lambda.id,
+      aws_api_gateway_authorizer.cognito.id,
     ]))
   }
 }

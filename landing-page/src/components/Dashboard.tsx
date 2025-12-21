@@ -17,7 +17,7 @@ export function Dashboard() {
   const [isFetchingLinks, setIsFetchingLinks] = useState(true);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const { getIdToken, logout } = useAuth();
+  const { getIdToken } = useAuth();
 
   useEffect(() => {
     fetchUserLinks();
@@ -120,45 +120,8 @@ export function Dashboard() {
   };
 
   return (
-    <div className="dashboard">
-      <header className="dashboard-header">
-        <div className="header-content">
-          <h1 className="dashboard-title">My Dashboard</h1>
-          <button onClick={logout} className="logout-btn">
-            Logout
-          </button>
-        </div>
-      </header>
-
+    <div className="dashboard" style={{ paddingTop: '80px' }}>
       <div className="dashboard-container">
-        {/* Shorten URL Section */}
-        <section className="shorten-section">
-          <h2>Create New Short Link</h2>
-          <form className="dashboard-form" onSubmit={handleShorten}>
-            <div className="input-group-dashboard">
-              <input
-                type="url"
-                placeholder="Enter your long URL here..."
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                className="url-input-dashboard"
-                disabled={isLoading}
-              />
-              <button
-                type="submit"
-                className="shorten-btn-dashboard"
-                disabled={isLoading}
-              >
-                {isLoading ? "Shortening..." : "Shorten"}
-              </button>
-            </div>
-            {error && <p className="error-message-dashboard">{error}</p>}
-            {successMessage && (
-              <p className="success-message-dashboard">{successMessage}</p>
-            )}
-          </form>
-        </section>
-
         {/* Links List Section */}
         <section className="links-section">
           <div className="section-header">

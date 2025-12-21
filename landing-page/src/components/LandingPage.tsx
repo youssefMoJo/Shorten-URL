@@ -1,63 +1,66 @@
-import { useState } from 'react'
-import { config } from '../config'
-import { useAuth } from '../contexts/AuthContext'
+import { useState } from "react";
+import { config } from "../config";
+import { useAuth } from "../contexts/AuthContext";
 
 export function LandingPage() {
-  const [url, setUrl] = useState('')
-  const [shortUrl, setShortUrl] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState('')
-  const { getIdToken } = useAuth()
+  const [url, setUrl] = useState("");
+  const [shortUrl, setShortUrl] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const { getIdToken } = useAuth();
 
   const handleShorten = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setShortUrl('')
+    e.preventDefault();
+    setError("");
+    setShortUrl("");
 
     if (!url) {
-      setError('Please enter a URL')
-      return
+      setError("Please enter a URL");
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
       const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      }
+        "Content-Type": "application/json",
+      };
 
       // Add Authorization header if user is authenticated
-      const token = getIdToken()
+      const token = getIdToken();
       if (token) {
-        headers['Authorization'] = `Bearer ${token}`
+        headers["Authorization"] = `Bearer ${token}`;
       }
 
-      const response = await fetch(`${config.api.baseUrl}${config.api.endpoints.shorten}`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ long_link: url }),
-      })
+      const response = await fetch(
+        `${config.api.baseUrl}${config.api.endpoints.shorten}`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ long_link: url }),
+        }
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to shorten URL')
+        throw new Error("Failed to shorten URL");
       }
 
-      const data = await response.json()
-      setShortUrl(data.short_url)
+      const data = await response.json();
+      setShortUrl(data.short_url);
     } catch (err) {
-      setError('Something went wrong. Please try again.')
+      setError("Something went wrong. Please try again.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(shortUrl)
-    alert('Copied to clipboard!')
-  }
+    navigator.clipboard.writeText(shortUrl);
+    alert("Copied to clipboard!");
+  };
 
   return (
-    <div className="app" style={{ paddingTop: '80px' }}>
+    <div className="app">
       {/* Hero Section */}
       <section className="hero">
         <div className="container">
@@ -68,7 +71,8 @@ export function LandingPage() {
             </h1>
             <p className="hero-subtitle">
               Fast, secure, and reliable URL shortening service powered by AWS.
-              Create short links in seconds, track them with authentication, and share them anywhere.
+              Create short links in seconds, track them with authentication, and
+              share them anywhere.
             </p>
 
             {/* URL Shortener Form */}
@@ -87,7 +91,7 @@ export function LandingPage() {
                   className="shorten-btn"
                   disabled={isLoading}
                 >
-                  {isLoading ? 'Shortening...' : 'Shorten'}
+                  {isLoading ? "Shortening..." : "Shorten"}
                 </button>
               </div>
               {error && <p className="error-message">{error}</p>}
@@ -99,7 +103,12 @@ export function LandingPage() {
                 <div className="result-content">
                   <p className="result-label">Your shortened URL:</p>
                   <div className="result-url-container">
-                    <a href={shortUrl} target="_blank" rel="noopener noreferrer" className="result-url">
+                    <a
+                      href={shortUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="result-url"
+                    >
                       {shortUrl}
                     </a>
                     <button onClick={copyToClipboard} className="copy-btn">
@@ -133,43 +142,61 @@ export function LandingPage() {
       <section className="features">
         <div className="container">
           <h2 className="section-title">Powerful Features</h2>
-          <p className="section-subtitle">Everything you need for professional URL management</p>
+          <p className="section-subtitle">
+            Everything you need for professional URL management
+          </p>
 
           <div className="features-grid">
             <div className="feature-card">
               <div className="feature-icon">⚡</div>
               <h3>Lightning Fast</h3>
-              <p>Generate short URLs in milliseconds with our optimized AWS Lambda functions</p>
+              <p>
+                Generate short URLs in milliseconds with our optimized AWS
+                Lambda functions
+              </p>
             </div>
 
             <div className="feature-card">
               <div className="feature-icon">🔒</div>
               <h3>Secure & Private</h3>
-              <p>Cryptographically random 8-character codes with enterprise-grade AWS security</p>
+              <p>
+                Cryptographically random 8-character codes with enterprise-grade
+                AWS security
+              </p>
             </div>
 
             <div className="feature-card">
               <div className="feature-icon">👤</div>
               <h3>User Authentication</h3>
-              <p>Sign up with AWS Cognito to track and manage all your shortened links</p>
+              <p>
+                Sign up with AWS Cognito to track and manage all your shortened
+                links
+              </p>
             </div>
 
             <div className="feature-card">
               <div className="feature-icon">📊</div>
               <h3>Link Dashboard</h3>
-              <p>View all your links in one place with timestamps and analytics</p>
+              <p>
+                View all your links in one place with timestamps and analytics
+              </p>
             </div>
 
             <div className="feature-card">
               <div className="feature-icon">🌐</div>
               <h3>Anonymous Mode</h3>
-              <p>No account needed - create short links instantly without signing up</p>
+              <p>
+                No account needed - create short links instantly without signing
+                up
+              </p>
             </div>
 
             <div className="feature-card">
               <div className="feature-icon">♾️</div>
               <h3>Infinite Scale</h3>
-              <p>Built on serverless AWS infrastructure that scales automatically</p>
+              <p>
+                Built on serverless AWS infrastructure that scales automatically
+              </p>
             </div>
           </div>
         </div>
@@ -211,7 +238,9 @@ export function LandingPage() {
       <section className="tech-stack">
         <div className="container">
           <h2 className="section-title">Built with Modern Technology</h2>
-          <p className="section-subtitle">Powered by AWS serverless architecture</p>
+          <p className="section-subtitle">
+            Powered by AWS serverless architecture
+          </p>
 
           <div className="tech-grid">
             <div className="tech-item">
@@ -283,11 +312,16 @@ export function LandingPage() {
       <section className="cta">
         <div className="container">
           <h2 className="cta-title">Ready to Start Shortening?</h2>
-          <p className="cta-subtitle">Join thousands of users who trust our service</p>
+          <p className="cta-subtitle">
+            Join thousands of users who trust our service
+          </p>
           <div className="cta-buttons">
-            <a href="#hero" className="btn btn-primary">Try It Now</a>
-            <a href="https://github.com/yourusername/Shorten-URL" target="_blank" rel="noopener noreferrer" className="btn btn-secondary">
-              View on GitHub
+            <a
+              href="https://chromewebstore.google.com/detail/shorten-url/pkdhbhbeapnenbeihmabpgmeeinbdpgc"
+              className="btn btn-primary"
+              target="_blank"
+            >
+              Try It Now
             </a>
           </div>
         </div>
@@ -319,20 +353,34 @@ export function LandingPage() {
                 <li>Terraform</li>
               </ul>
             </div>
-            <div className="footer-section">
+            {/* <div className="footer-section">
               <h4>Resources</h4>
               <ul>
-                <li><a href="https://github.com/yourusername/Shorten-URL">GitHub</a></li>
-                <li><a href="https://github.com/yourusername/Shorten-URL/blob/main/ARCHITECTURE.md">Documentation</a></li>
-                <li><a href="https://github.com/yourusername/Shorten-URL/blob/main/DEPLOYMENT.md">API Docs</a></li>
+                <li>
+                  <a href="https://github.com/yourusername/Shorten-URL">
+                    GitHub
+                  </a>
+                </li>
+                <li>
+                  <a href="https://github.com/yourusername/Shorten-URL/blob/main/ARCHITECTURE.md">
+                    Documentation
+                  </a>
+                </li>
+                <li>
+                  <a href="https://github.com/yourusername/Shorten-URL/blob/main/DEPLOYMENT.md">
+                    API Docs
+                  </a>
+                </li>
               </ul>
-            </div>
+            </div> */}
           </div>
           <div className="footer-bottom">
-            <p>&copy; 2025 URL Shortener. Built with React + TypeScript + AWS</p>
+            <p>
+              &copy; 2025 URL Shortener. Built with React + TypeScript + AWS
+            </p>
           </div>
         </div>
       </footer>
     </div>
-  )
+  );
 }

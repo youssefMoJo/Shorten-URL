@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import './AuthModal.css'
+import './Auth.css'
 
 interface SignupModalProps {
   isOpen: boolean

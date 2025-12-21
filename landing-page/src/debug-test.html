@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Debug Test</title>
+</head>
+<body>
+  <h1>If you see this, HTML is working</h1>
+  <div id="root">Loading...</div>
+  <script type="module">
+    console.log('Script is running');
+    document.getElementById('root').innerHTML = '<h2>React should mount here</h2>';
+  </script>
+</body>
+</html>

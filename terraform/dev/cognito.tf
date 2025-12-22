@@ -4,8 +4,9 @@ resource "aws_cognito_user_pool" "url_shortener" {
 
   # Allow users to sign in with email
   username_attributes = ["email"]
-  # Disable auto-verification for seamless signup
-  auto_verified_attributes = []
+  # Enable auto-verification for password reset flow
+  # Users are still auto-confirmed via Lambda on signup (no verification email sent)
+  auto_verified_attributes = ["email"]
 
   # Password policy
   password_policy {
@@ -17,7 +18,7 @@ resource "aws_cognito_user_pool" "url_shortener" {
     temporary_password_validity_days = 7
   }
 
-  # Account recovery
+  # Account recovery via email
   account_recovery_setting {
     recovery_mechanism {
       name     = "verified_email"

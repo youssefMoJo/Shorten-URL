@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { LoginModal } from "./LoginModal";
 import { SignupModal } from "./SignupModal";
+import { ForgotPasswordModal } from "./ForgotPasswordModal";
 import logo from "../assets/logo.png";
 import "./Header.css";
 
@@ -10,6 +11,7 @@ export function Header() {
   const { isAuthenticated, logout, user } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -26,7 +28,13 @@ export function Header() {
 
   const handleSwitchToLogin = () => {
     setShowSignupModal(false);
+    setShowForgotPasswordModal(false);
     setShowLoginModal(true);
+  };
+
+  const handleForgotPassword = () => {
+    setShowLoginModal(false);
+    setShowForgotPasswordModal(true);
   };
 
   const handleDashboardClick = () => {
@@ -164,12 +172,19 @@ export function Header() {
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
         onSwitchToSignup={handleSwitchToSignup}
+        onForgotPassword={handleForgotPassword}
       />
 
       <SignupModal
         isOpen={showSignupModal}
         onClose={() => setShowSignupModal(false)}
         onSwitchToLogin={handleSwitchToLogin}
+      />
+
+      <ForgotPasswordModal
+        isOpen={showForgotPasswordModal}
+        onClose={() => setShowForgotPasswordModal(false)}
+        onBackToLogin={handleSwitchToLogin}
       />
     </>
   );

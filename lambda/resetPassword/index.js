@@ -1,21 +1,24 @@
 import {
   CognitoIdentityProviderClient,
-  SignUpCommand,
+  ConfirmForgotPasswordCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
-
+// testing
 const client = new CognitoIdentityProviderClient({ region: "ca-central-1" });
 
 export const handler = async (event) => {
-  console.log("Signup request received:", JSON.stringify(event, null, 2));
+  console.log(
+    "Reset password request received:",
+    JSON.stringify(event, null, 2)
+  );
 
   try {
     const body =
       typeof event.body === "string" ? JSON.parse(event.body) : event.body;
 
-    const { email, password } = body;
+    const { email, code, newPassword } = body;
 
     // Validate input
-    if (!email || !password) {
+    if (!email || !code || !newPassword) {
       return {
         statusCode: 400,
         headers: {
@@ -25,7 +28,7 @@ export const handler = async (event) => {
         },
         body: JSON.stringify({
           error: "Missing required fields",
-          message: "Email and password are required",
+          message: "Email, verification code, and new password are required",
         }),
       };
     }
@@ -48,7 +51,7 @@ export const handler = async (event) => {
     }
 
     // Validate password strength
-    if (password.length < 8) {
+    if (newPassword.length < 8) {
       return {
         statusCode: 400,
         headers: {
@@ -64,26 +67,20 @@ export const handler = async (event) => {
       };
     }
 
-    // Step 1: Sign up the user
-    const signUpCommand = new SignUpCommand({
+    // Confirm forgot password with the verification code
+    const command = new ConfirmForgotPasswordCommand({
       ClientId: process.env.COGNITO_CLIENT_ID,
       Username: email,
-      Password: password,
-      UserAttributes: [
-        {
-          Name: "email",
-          Value: email,
-        },
-      ],
+      ConfirmationCode: code,
+      Password: newPassword,
     });
 
     try {
-      const result = await client.send(signUpCommand);
-      console.log("User signed up successfully:", result.UserSub);
+      const result = await client.send(command);
+      console.log("Password reset successfully:", result);
 
-      // Return success - user needs to verify email with code
       return {
-        statusCode: 201,
+        statusCode: 200,
         headers: {
           "Access-Control-Allow-Origin": "*",
           "Access-Control-Allow-Headers": "Content-Type,Authorization",
@@ -91,28 +88,40 @@ export const handler = async (event) => {
         },
         body: JSON.stringify({
           message:
-            "Account created successfully. Please check your email for a verification code.",
-          userId: result.UserSub,
-          email: email,
-          userConfirmed: result.UserConfirmed,
-          codeDeliveryDetails: result.CodeDeliveryDetails,
+            "Password reset successfully. You can now log in with your new password.",
         }),
       };
     } catch (error) {
-      console.error("Signup error:", error);
+      console.error("Reset password error:", error);
 
-      // Handle specific Cognito errors
-      if (error.name === "UsernameExistsException") {
+      if (error.name === "CodeMismatchException") {
         return {
-          statusCode: 409,
+          statusCode: 400,
           headers: {
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Headers": "Content-Type,Authorization",
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            error: "User already exists",
-            message: "An account with this email already exists",
+            error: "Invalid verification code",
+            message:
+              "The verification code is incorrect. Please check and try again.",
+          }),
+        };
+      }
+
+      if (error.name === "ExpiredCodeException") {
+        return {
+          statusCode: 400,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Content-Type,Authorization",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            error: "Expired verification code",
+            message:
+              "The verification code has expired. Please request a new one.",
           }),
         };
       }
@@ -132,6 +141,36 @@ export const handler = async (event) => {
         };
       }
 
+      if (error.name === "UserNotFoundException") {
+        return {
+          statusCode: 404,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Content-Type,Authorization",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            error: "User not found",
+            message: "No account found with this email address",
+          }),
+        };
+      }
+
+      if (error.name === "LimitExceededException") {
+        return {
+          statusCode: 429,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Content-Type,Authorization",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            error: "Too many attempts",
+            message: "Too many failed attempts. Please try again later.",
+          }),
+        };
+      }
+
       if (error.name === "InvalidParameterException") {
         return {
           statusCode: 400,
@@ -142,7 +181,7 @@ export const handler = async (event) => {
           },
           body: JSON.stringify({
             error: "Invalid parameters",
-            message: error.message || "Invalid signup parameters",
+            message: error.message || "Invalid request parameters",
           }),
         };
       }
@@ -161,7 +200,7 @@ export const handler = async (event) => {
       },
       body: JSON.stringify({
         error: "Internal server error",
-        message: "An unexpected error occurred during signup",
+        message: "An unexpected error occurred. Please try again later.",
       }),
     };
   }

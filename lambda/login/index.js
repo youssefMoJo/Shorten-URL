@@ -126,7 +126,13 @@ export const handler = async (event) => {
       throw error;
     }
 
-    // Return success with JWT tokens
+    // Decode the ID token to get user information
+    const idToken = authResult.AuthenticationResult.IdToken;
+    const tokenPayload = JSON.parse(
+      Buffer.from(idToken.split('.')[1], 'base64').toString('utf-8')
+    );
+
+    // Return success with JWT tokens and user info
     return {
       statusCode: 200,
       headers: {
@@ -136,6 +142,8 @@ export const handler = async (event) => {
       },
       body: JSON.stringify({
         message: "Login successful",
+        userId: tokenPayload.sub,
+        email: tokenPayload.email,
         tokens: {
           idToken: authResult.AuthenticationResult.IdToken,
           accessToken: authResult.AuthenticationResult.AccessToken,

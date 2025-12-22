@@ -1,21 +1,25 @@
 import {
   CognitoIdentityProviderClient,
-  SignUpCommand,
+  ForgotPasswordCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
+// testing
 
 const client = new CognitoIdentityProviderClient({ region: "ca-central-1" });
 
 export const handler = async (event) => {
-  console.log("Signup request received:", JSON.stringify(event, null, 2));
+  console.log(
+    "Forgot password request received:",
+    JSON.stringify(event, null, 2)
+  );
 
   try {
     const body =
       typeof event.body === "string" ? JSON.parse(event.body) : event.body;
 
-    const { email, password } = body;
+    const { email } = body;
 
     // Validate input
-    if (!email || !password) {
+    if (!email) {
       return {
         statusCode: 400,
         headers: {
@@ -24,8 +28,8 @@ export const handler = async (event) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          error: "Missing required fields",
-          message: "Email and password are required",
+          error: "Missing required field",
+          message: "Email is required",
         }),
       };
     }
@@ -47,43 +51,19 @@ export const handler = async (event) => {
       };
     }
 
-    // Validate password strength
-    if (password.length < 8) {
-      return {
-        statusCode: 400,
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Headers": "Content-Type,Authorization",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          error: "Weak password",
-          message:
-            "Password must be at least 8 characters and contain uppercase, lowercase, numbers, and symbols",
-        }),
-      };
-    }
-
-    // Step 1: Sign up the user
-    const signUpCommand = new SignUpCommand({
+    // Initiate forgot password flow
+    const command = new ForgotPasswordCommand({
       ClientId: process.env.COGNITO_CLIENT_ID,
       Username: email,
-      Password: password,
-      UserAttributes: [
-        {
-          Name: "email",
-          Value: email,
-        },
-      ],
     });
 
     try {
-      const result = await client.send(signUpCommand);
-      console.log("User signed up successfully:", result.UserSub);
+      const result = await client.send(command);
+      console.log("Forgot password initiated successfully:", result);
 
-      // Return success - user needs to verify email with code
+      // Return success - don't reveal if user exists for security
       return {
-        statusCode: 201,
+        statusCode: 200,
         headers: {
           "Access-Control-Allow-Origin": "*",
           "Access-Control-Allow-Headers": "Content-Type,Authorization",
@@ -91,43 +71,42 @@ export const handler = async (event) => {
         },
         body: JSON.stringify({
           message:
-            "Account created successfully. Please check your email for a verification code.",
-          userId: result.UserSub,
-          email: email,
-          userConfirmed: result.UserConfirmed,
+            "If an account with that email exists, a password reset code has been sent.",
           codeDeliveryDetails: result.CodeDeliveryDetails,
         }),
       };
     } catch (error) {
-      console.error("Signup error:", error);
+      console.error("Forgot password error:", error);
 
-      // Handle specific Cognito errors
-      if (error.name === "UsernameExistsException") {
+      // For security, don't reveal if user doesn't exist
+      // Return success message anyway
+      if (error.name === "UserNotFoundException") {
         return {
-          statusCode: 409,
+          statusCode: 200,
           headers: {
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Headers": "Content-Type,Authorization",
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            error: "User already exists",
-            message: "An account with this email already exists",
+            message:
+              "If an account with that email exists, a password reset code has been sent.",
           }),
         };
       }
 
-      if (error.name === "InvalidPasswordException") {
+      if (error.name === "LimitExceededException") {
         return {
-          statusCode: 400,
+          statusCode: 429,
           headers: {
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Headers": "Content-Type,Authorization",
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            error: "Invalid password",
-            message: error.message || "Password does not meet requirements",
+            error: "Too many requests",
+            message:
+              "Please wait before requesting another password reset code",
           }),
         };
       }
@@ -142,7 +121,7 @@ export const handler = async (event) => {
           },
           body: JSON.stringify({
             error: "Invalid parameters",
-            message: error.message || "Invalid signup parameters",
+            message: error.message || "Invalid request parameters",
           }),
         };
       }
@@ -161,7 +140,7 @@ export const handler = async (event) => {
       },
       body: JSON.stringify({
         error: "Internal server error",
-        message: "An unexpected error occurred during signup",
+        message: "An unexpected error occurred. Please try again later.",
       }),
     };
   }

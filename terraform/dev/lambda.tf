@@ -84,6 +84,58 @@ data "archive_file" "login_lambda" {
   ]
 }
 
+data "archive_file" "forgot_password_lambda" {
+  type        = "zip"
+  source_dir  = "${path.module}/../../lambda/forgotPassword"
+  output_path = "${path.module}/lambda_packages/forgotPassword.zip"
+
+  excludes = [
+    "node_modules",
+    "package-lock.json",
+    ".git",
+    ".gitignore"
+  ]
+}
+
+data "archive_file" "reset_password_lambda" {
+  type        = "zip"
+  source_dir  = "${path.module}/../../lambda/resetPassword"
+  output_path = "${path.module}/lambda_packages/resetPassword.zip"
+
+  excludes = [
+    "node_modules",
+    "package-lock.json",
+    ".git",
+    ".gitignore"
+  ]
+}
+
+data "archive_file" "verify_email_lambda" {
+  type        = "zip"
+  source_dir  = "${path.module}/../../lambda/verifyEmail"
+  output_path = "${path.module}/lambda_packages/verifyEmail.zip"
+
+  excludes = [
+    "node_modules",
+    "package-lock.json",
+    ".git",
+    ".gitignore"
+  ]
+}
+
+data "archive_file" "resend_verification_lambda" {
+  type        = "zip"
+  source_dir  = "${path.module}/../../lambda/resendVerification"
+  output_path = "${path.module}/lambda_packages/resendVerification.zip"
+
+  excludes = [
+    "node_modules",
+    "package-lock.json",
+    ".git",
+    ".gitignore"
+  ]
+}
+
 # Shorten URL Lambda Function
 resource "aws_lambda_function" "shorten_url" {
   filename         = data.archive_file.shorten_url_lambda.output_path
@@ -299,6 +351,180 @@ resource "aws_lambda_permission" "login_api_gateway" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.login.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.url_shortener.execution_arn}/*/*"
+}
+
+# Forgot Password Lambda Function
+resource "aws_lambda_function" "forgot_password" {
+  filename         = data.archive_file.forgot_password_lambda.output_path
+  function_name    = "${var.project_name}-${var.environment}-forgot-password"
+  role            = aws_iam_role.lambda_execution_role.arn
+  handler         = "index.handler"
+  source_code_hash = data.archive_file.forgot_password_lambda.output_base64sha256
+  runtime         = var.lambda_runtime
+  timeout         = var.lambda_timeout
+  memory_size     = var.lambda_memory_size
+
+  environment {
+    variables = {
+      COGNITO_CLIENT_ID = aws_cognito_user_pool_client.url_shortener.id
+      AWS_REGION_CUSTOM = var.aws_region
+      ENVIRONMENT       = var.environment
+    }
+  }
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.project_name}-${var.environment}-forgot-password"
+    }
+  )
+}
+
+# Reset Password Lambda Function
+resource "aws_lambda_function" "reset_password" {
+  filename         = data.archive_file.reset_password_lambda.output_path
+  function_name    = "${var.project_name}-${var.environment}-reset-password"
+  role            = aws_iam_role.lambda_execution_role.arn
+  handler         = "index.handler"
+  source_code_hash = data.archive_file.reset_password_lambda.output_base64sha256
+  runtime         = var.lambda_runtime
+  timeout         = var.lambda_timeout
+  memory_size     = var.lambda_memory_size
+
+  environment {
+    variables = {
+      COGNITO_CLIENT_ID = aws_cognito_user_pool_client.url_shortener.id
+      AWS_REGION_CUSTOM = var.aws_region
+      ENVIRONMENT       = var.environment
+    }
+  }
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.project_name}-${var.environment}-reset-password"
+    }
+  )
+}
+
+# CloudWatch Log Group for Forgot Password Lambda
+resource "aws_cloudwatch_log_group" "forgot_password_logs" {
+  name              = "/aws/lambda/${aws_lambda_function.forgot_password.function_name}"
+  retention_in_days = 7
+
+  tags = var.tags
+}
+
+# CloudWatch Log Group for Reset Password Lambda
+resource "aws_cloudwatch_log_group" "reset_password_logs" {
+  name              = "/aws/lambda/${aws_lambda_function.reset_password.function_name}"
+  retention_in_days = 7
+
+  tags = var.tags
+}
+
+# Lambda permission for API Gateway to invoke Forgot Password
+resource "aws_lambda_permission" "forgot_password_api_gateway" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.forgot_password.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.url_shortener.execution_arn}/*/*"
+}
+
+# Lambda permission for API Gateway to invoke Reset Password
+resource "aws_lambda_permission" "reset_password_api_gateway" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.reset_password.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.url_shortener.execution_arn}/*/*"
+}
+
+# Verify Email Lambda Function
+resource "aws_lambda_function" "verify_email" {
+  filename         = data.archive_file.verify_email_lambda.output_path
+  function_name    = "${var.project_name}-${var.environment}-verify-email"
+  role            = aws_iam_role.lambda_execution_role.arn
+  handler         = "index.handler"
+  source_code_hash = data.archive_file.verify_email_lambda.output_base64sha256
+  runtime         = var.lambda_runtime
+  timeout         = var.lambda_timeout
+  memory_size     = var.lambda_memory_size
+
+  environment {
+    variables = {
+      COGNITO_CLIENT_ID = aws_cognito_user_pool_client.url_shortener.id
+      AWS_REGION_CUSTOM = var.aws_region
+      ENVIRONMENT       = var.environment
+    }
+  }
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.project_name}-${var.environment}-verify-email"
+    }
+  )
+}
+
+# Resend Verification Lambda Function
+resource "aws_lambda_function" "resend_verification" {
+  filename         = data.archive_file.resend_verification_lambda.output_path
+  function_name    = "${var.project_name}-${var.environment}-resend-verification"
+  role            = aws_iam_role.lambda_execution_role.arn
+  handler         = "index.handler"
+  source_code_hash = data.archive_file.resend_verification_lambda.output_base64sha256
+  runtime         = var.lambda_runtime
+  timeout         = var.lambda_timeout
+  memory_size     = var.lambda_memory_size
+
+  environment {
+    variables = {
+      COGNITO_CLIENT_ID = aws_cognito_user_pool_client.url_shortener.id
+      AWS_REGION_CUSTOM = var.aws_region
+      ENVIRONMENT       = var.environment
+    }
+  }
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.project_name}-${var.environment}-resend-verification"
+    }
+  )
+}
+
+# CloudWatch Log Groups
+resource "aws_cloudwatch_log_group" "verify_email_logs" {
+  name              = "/aws/lambda/${aws_lambda_function.verify_email.function_name}"
+  retention_in_days = 7
+
+  tags = var.tags
+}
+
+resource "aws_cloudwatch_log_group" "resend_verification_logs" {
+  name              = "/aws/lambda/${aws_lambda_function.resend_verification.function_name}"
+  retention_in_days = 7
+
+  tags = var.tags
+}
+
+# Lambda permissions for API Gateway
+resource "aws_lambda_permission" "verify_email_api_gateway" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.verify_email.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.url_shortener.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "resend_verification_api_gateway" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.resend_verification.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.url_shortener.execution_arn}/*/*"
 }

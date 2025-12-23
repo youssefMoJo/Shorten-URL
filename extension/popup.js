@@ -107,6 +107,9 @@ document.addEventListener("DOMContentLoaded", function () {
         // Show copy button with animation
         copyButton.style.display = "flex";
 
+        // Automatically copy the short URL to clipboard on first load
+        await copyToClipboard(shortURL);
+
         // Copy the short URL to the clipboard when the button is clicked
         copyButton.addEventListener("click", async function () {
           await copyToClipboard(shortURL);

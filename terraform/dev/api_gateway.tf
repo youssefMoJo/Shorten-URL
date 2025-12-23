@@ -668,6 +668,80 @@ resource "aws_api_gateway_integration_response" "auth_resend_verification_option
   }
 }
 
+# /feedback resource
+resource "aws_api_gateway_resource" "feedback" {
+  rest_api_id = aws_api_gateway_rest_api.url_shortener.id
+  parent_id   = aws_api_gateway_rest_api.url_shortener.root_resource_id
+  path_part   = "feedback"
+}
+
+# POST method for /feedback
+resource "aws_api_gateway_method" "feedback_post" {
+  rest_api_id   = aws_api_gateway_rest_api.url_shortener.id
+  resource_id   = aws_api_gateway_resource.feedback.id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+# Integration for /feedback POST
+resource "aws_api_gateway_integration" "feedback_lambda" {
+  rest_api_id             = aws_api_gateway_rest_api.url_shortener.id
+  resource_id             = aws_api_gateway_resource.feedback.id
+  http_method             = aws_api_gateway_method.feedback_post.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.submit_feedback.invoke_arn
+}
+
+# Enable CORS for /feedback
+resource "aws_api_gateway_method" "feedback_options" {
+  rest_api_id   = aws_api_gateway_rest_api.url_shortener.id
+  resource_id   = aws_api_gateway_resource.feedback.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "feedback_options" {
+  rest_api_id = aws_api_gateway_rest_api.url_shortener.id
+  resource_id = aws_api_gateway_resource.feedback.id
+  http_method = aws_api_gateway_method.feedback_options.http_method
+  type        = "MOCK"
+
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+
+resource "aws_api_gateway_method_response" "feedback_options" {
+  rest_api_id = aws_api_gateway_rest_api.url_shortener.id
+  resource_id = aws_api_gateway_resource.feedback.id
+  http_method = aws_api_gateway_method.feedback_options.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+
+  response_models = {
+    "application/json" = "Empty"
+  }
+}
+
+resource "aws_api_gateway_integration_response" "feedback_options" {
+  rest_api_id = aws_api_gateway_rest_api.url_shortener.id
+  resource_id = aws_api_gateway_resource.feedback.id
+  http_method = aws_api_gateway_method.feedback_options.http_method
+  status_code = aws_api_gateway_method_response.feedback_options.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+    "method.response.header.Access-Control-Allow-Methods" = "'POST,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
+  }
+}
+
 # Enable CORS for /me/links
 resource "aws_api_gateway_method" "me_links_options" {
   rest_api_id   = aws_api_gateway_rest_api.url_shortener.id
@@ -731,6 +805,7 @@ resource "aws_api_gateway_deployment" "url_shortener" {
     aws_api_gateway_integration.auth_reset_password_lambda,
     aws_api_gateway_integration.auth_verify_email_lambda,
     aws_api_gateway_integration.auth_resend_verification_lambda,
+    aws_api_gateway_integration.feedback_lambda,
     aws_api_gateway_integration.shorten_options,
     aws_api_gateway_integration.expand_options,
     aws_api_gateway_integration.me_links_options,
@@ -739,7 +814,8 @@ resource "aws_api_gateway_deployment" "url_shortener" {
     aws_api_gateway_integration.auth_forgot_password_options,
     aws_api_gateway_integration.auth_reset_password_options,
     aws_api_gateway_integration.auth_verify_email_options,
-    aws_api_gateway_integration.auth_resend_verification_options
+    aws_api_gateway_integration.auth_resend_verification_options,
+    aws_api_gateway_integration.feedback_options
   ]
 
   lifecycle {
@@ -760,6 +836,7 @@ resource "aws_api_gateway_deployment" "url_shortener" {
       aws_api_gateway_resource.auth_reset_password.id,
       aws_api_gateway_resource.auth_verify_email.id,
       aws_api_gateway_resource.auth_resend_verification.id,
+      aws_api_gateway_resource.feedback.id,
       aws_api_gateway_method.shorten_post.id,
       aws_api_gateway_method.expand_get.id,
       aws_api_gateway_method.me_links_get.id,
@@ -769,6 +846,7 @@ resource "aws_api_gateway_deployment" "url_shortener" {
       aws_api_gateway_method.auth_reset_password_post.id,
       aws_api_gateway_method.auth_verify_email_post.id,
       aws_api_gateway_method.auth_resend_verification_post.id,
+      aws_api_gateway_method.feedback_post.id,
       aws_api_gateway_integration.shorten_lambda.id,
       aws_api_gateway_integration.expand_lambda.id,
       aws_api_gateway_integration.me_links_lambda.id,
@@ -778,6 +856,7 @@ resource "aws_api_gateway_deployment" "url_shortener" {
       aws_api_gateway_integration.auth_reset_password_lambda.id,
       aws_api_gateway_integration.auth_verify_email_lambda.id,
       aws_api_gateway_integration.auth_resend_verification_lambda.id,
+      aws_api_gateway_integration.feedback_lambda.id,
       aws_api_gateway_authorizer.cognito.id,
     ]))
   }

@@ -49,7 +49,9 @@ resource "aws_iam_role_policy" "lambda_dynamodb_policy" {
         ]
         Resource = [
           aws_dynamodb_table.url_mappings.arn,
-          "${aws_dynamodb_table.url_mappings.arn}/*"
+          "${aws_dynamodb_table.url_mappings.arn}/*",
+          aws_dynamodb_table.feedback.arn,
+          "${aws_dynamodb_table.feedback.arn}/*"
         ]
       }
     ]

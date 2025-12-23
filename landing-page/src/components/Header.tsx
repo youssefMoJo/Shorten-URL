@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { LoginModal } from "./LoginModal";
@@ -13,7 +13,34 @@ export function Header() {
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowProfileDropdown(false);
+      }
+    }
+
+    if (showProfileDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }
+  }, [showProfileDropdown]);
+
+  // Extract username from email (part before @)
+  const getUsername = () => {
+    if (!user?.email) return "";
+    return user.email.split("@")[0];
+  };
 
   const handleLogout = () => {
     logout();
@@ -56,26 +83,92 @@ export function Header() {
     <>
       <header className="header">
         <div className="header-container">
+          {/* Logo - Left */}
           <a href="/" className="logo">
             <img src={logo} alt="Shorten URL Logo" className="logo-icon" />
             <span className="logo-text">Shorten URL</span>
           </a>
 
-          {/* Desktop Navigation */}
-          <nav className="nav desktop-nav">
+          {/* Desktop Navigation - Center */}
+          <nav className="nav-center desktop-nav">
+            {isAuthenticated && (
+              <button
+                onClick={() => navigate("/dashboard")}
+                className="nav-link-btn"
+              >
+                Dashboard
+              </button>
+            )}
+          </nav>
+
+          {/* Desktop Right Section */}
+          <div className="nav-right desktop-nav">
             {isAuthenticated ? (
-              <>
+              <div className="profile-section" ref={dropdownRef}>
                 <button
-                  onClick={() => navigate("/dashboard")}
-                  className="nav-link-btn"
+                  className="profile-trigger"
+                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
                 >
-                  Dashboard
+                  <div className="profile-avatar">
+                    {getUsername().charAt(0).toUpperCase()}
+                  </div>
+                  <span className="profile-username">{getUsername()}</span>
+                  <svg
+                    className={`profile-arrow ${
+                      showProfileDropdown ? "active" : ""
+                    }`}
+                    width="12"
+                    height="8"
+                    viewBox="0 0 12 8"
+                    fill="none"
+                  >
+                    <path
+                      d="M1 1.5L6 6.5L11 1.5"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                 </button>
-                <span className="user-email">{user?.email}</span>
-                <button onClick={handleLogout} className="logout-btn">
-                  Logout
-                </button>
-              </>
+
+                {/* Profile Dropdown */}
+                {showProfileDropdown && (
+                  <div className="profile-dropdown">
+                    <button
+                      className="dropdown-item"
+                      onClick={() => {
+                        navigate("/profile");
+                        setShowProfileDropdown(false);
+                      }}
+                    >
+                      <span className="dropdown-icon">👤</span>
+                      Profile
+                    </button>
+                    <button
+                      className="dropdown-item"
+                      onClick={() => {
+                        navigate("/feedback");
+                        setShowProfileDropdown(false);
+                      }}
+                    >
+                      <span className="dropdown-icon">💬</span>
+                      Send Feedback
+                    </button>
+                    <div className="dropdown-divider"></div>
+                    <button
+                      className="dropdown-item logout"
+                      onClick={() => {
+                        handleLogout();
+                        setShowProfileDropdown(false);
+                      }}
+                    >
+                      <span className="dropdown-icon">🚪</span>
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : (
               <>
                 <button
@@ -92,7 +185,7 @@ export function Header() {
                 </button>
               </>
             )}
-          </nav>
+          </div>
 
           {/* Hamburger Menu Button */}
           <button
@@ -131,9 +224,10 @@ export function Header() {
             <>
               <div className="sidebar-user-info">
                 <div className="sidebar-user-avatar">
-                  {user?.email?.charAt(0).toUpperCase()}
+                  {getUsername().charAt(0).toUpperCase()}
                 </div>
-                <span className="sidebar-user-email">{user?.email}</span>
+                <span className="sidebar-user-email">{getUsername()}</span>
+                <span className="sidebar-user-email-small">{user?.email}</span>
               </div>
 
               <button
@@ -142,6 +236,28 @@ export function Header() {
               >
                 <span className="sidebar-icon">📊</span>
                 Dashboard
+              </button>
+
+              <button
+                onClick={() => {
+                  navigate("/profile");
+                  setIsSidebarOpen(false);
+                }}
+                className="sidebar-nav-link"
+              >
+                <span className="sidebar-icon">👤</span>
+                Profile
+              </button>
+
+              <button
+                onClick={() => {
+                  navigate("/feedback");
+                  setIsSidebarOpen(false);
+                }}
+                className="sidebar-nav-link"
+              >
+                <span className="sidebar-icon">💬</span>
+                Send Feedback
               </button>
 
               <button onClick={handleLogout} className="sidebar-logout-btn">

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import toast from 'react-hot-toast'
 import { useAuth } from '../contexts/AuthContext'
 import './AuthModal.css'
 import './Auth.css'
@@ -88,7 +89,7 @@ export function LoginModal({ isOpen, onClose, onSwitchToSignup, onForgotPassword
     try {
       await resendVerificationCode(userEmail)
       setError('') // Clear any previous errors
-      alert('Verification code resent to your email!')
+      toast.success('Verification code resent to your email!')
     } catch (err: any) {
       setError(err.message || 'Failed to resend code. Please try again.')
     } finally {

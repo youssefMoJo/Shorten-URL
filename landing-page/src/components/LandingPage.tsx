@@ -1,4 +1,5 @@
 import { useState } from "react";
+import toast from "react-hot-toast";
 import { config } from "../config";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -56,7 +57,7 @@ export function LandingPage() {
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(shortUrl);
-    alert("Copied to clipboard!");
+    toast.success("Copied to clipboard!");
   };
 
   return (
@@ -65,73 +66,102 @@ export function LandingPage() {
       <section className="hero">
         <div className="container">
           <div className="hero-content">
-            <h1 className="hero-title">
-              Shorten Your URLs
-              <span className="gradient-text"> Instantly</span>
-            </h1>
-            <p className="hero-subtitle">
-              Fast, secure, and reliable URL shortening service powered by AWS.
-              Create short links in seconds, track them with authentication, and
-              share them anywhere.
-            </p>
+            {/* Hero Header */}
+            <div className="hero-header">
+              <h1 className="hero-title">
+                Shorten Your URLs
+                <span className="gradient-text"> Instantly</span>
+              </h1>
+              <p className="hero-subtitle">
+                Fast, secure, and reliable URL shortening service powered by
+                AWS. Create short links in seconds, track them with
+                authentication, and share them anywhere.
+              </p>
+            </div>
 
-            {/* URL Shortener Form */}
-            <form className="shortener-form" onSubmit={handleShorten}>
-              <div className="input-group">
-                <input
-                  type="url"
-                  placeholder="Enter your long URL here..."
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  className="url-input"
-                  disabled={isLoading}
-                />
-                <button
-                  type="submit"
-                  className="shorten-btn"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Shortening..." : "Shorten"}
-                </button>
-              </div>
-              {error && <p className="error-message">{error}</p>}
-            </form>
+            {/* Main Action Area */}
+            <div className="hero-main-action">
+              {/* URL Shortener Form */}
+              <form className="shortener-form" onSubmit={handleShorten}>
+                <div className="input-group">
+                  <input
+                    type="url"
+                    placeholder="Enter your long URL here..."
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    className="url-input"
+                    disabled={isLoading}
+                  />
+                  <button
+                    type="submit"
+                    className="shorten-btn"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Shortening..." : "Shorten"}
+                  </button>
+                </div>
+                {error && <p className="error-message">{error}</p>}
+              </form>
 
-            {/* Result Display */}
-            {shortUrl && (
-              <div className="result-box">
-                <div className="result-content">
-                  <p className="result-label">Your shortened URL:</p>
-                  <div className="result-url-container">
-                    <a
-                      href={shortUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="result-url"
-                    >
-                      {shortUrl}
-                    </a>
-                    <button onClick={copyToClipboard} className="copy-btn">
-                      Copy
-                    </button>
+              {/* Result Display */}
+              {shortUrl && (
+                <div className="result-box">
+                  <div className="result-content">
+                    <p className="result-label">Your shortened URL:</p>
+                    <div className="result-url-container">
+                      <a
+                        href={shortUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="result-url"
+                      >
+                        {shortUrl}
+                      </a>
+                      <button onClick={copyToClipboard} className="copy-btn">
+                        Copy
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
-            {/* Stats */}
-            <div className="stats">
-              <div className="stat-item">
-                <div className="stat-number">∞</div>
-                <div className="stat-label">Links Created</div>
+            {/* Hero Footer - Secondary Actions & Stats */}
+            <div className="hero-footer">
+              {/* Chrome Extension CTA */}
+              <div className="extension-cta-compact">
+                <div className="extension-info">
+                  <span className="extension-badge">🚀 Chrome Extension</span>
+                  <p className="extension-text-compact">
+                    One-click shortening from any webpage
+                  </p>
+                </div>
+                <a
+                  href="https://chromewebstore.google.com/detail/shorten-url/pkdhbhbeapnenbeihmabpgmeeinbdpgc"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="extension-btn-compact"
+                >
+                  Add to Chrome
+                </a>
               </div>
-              <div className="stat-item">
-                <div className="stat-number">99.9%</div>
-                <div className="stat-label">Uptime</div>
-              </div>
-              <div className="stat-item">
-                <div className="stat-number">&lt;50ms</div>
-                <div className="stat-label">Avg Response</div>
+
+              {/* Stats */}
+              <div className="stats-compact">
+                <div className="stat-item-compact">
+                  <div className="stat-number-compact">∞</div>
+                  <div className="stat-label-compact">Links</div>
+                </div>
+                <div className="stat-divider"></div>
+                <div className="stat-item-compact">
+                  <div className="stat-number-compact">99.9%</div>
+                  <div className="stat-label-compact">Uptime</div>
+                </div>
+                <div className="stat-divider"></div>
+                <div className="stat-item-compact">
+                  <div className="stat-number-compact">&lt;50ms</div>
+                  <div className="stat-label-compact">Speed</div>
+                </div>
               </div>
             </div>
           </div>
@@ -376,7 +406,15 @@ export function LandingPage() {
           </div>
           <div className="footer-bottom">
             <p>
-              &copy; 2025 URL Shortener. Built with React + TypeScript + AWS
+              &copy; 2025 ShortenURL. Built by{" "}
+              <a
+                href="https://youssefmohamed.ca/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Youssef Mohamed
+              </a>
+              .
             </p>
           </div>
         </div>

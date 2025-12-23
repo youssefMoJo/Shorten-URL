@@ -1,0 +1,11 @@
+{
+  "name": "submit-feedback",
+  "version": "1.0.0",
+  "description": "Lambda function to submit user feedback",
+  "type": "module",
+  "main": "index.js",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.200.0",
+    "@aws-sdk/lib-dynamodb": "^3.200.0"
+  }
+}

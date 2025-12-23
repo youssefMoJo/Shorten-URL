@@ -136,6 +136,19 @@ data "archive_file" "resend_verification_lambda" {
   ]
 }
 
+data "archive_file" "submit_feedback_lambda" {
+  type        = "zip"
+  source_dir  = "${path.module}/../../lambda/submitFeedback"
+  output_path = "${path.module}/lambda_packages/submitFeedback.zip"
+
+  excludes = [
+    "node_modules",
+    "package-lock.json",
+    ".git",
+    ".gitignore"
+  ]
+}
+
 # Shorten URL Lambda Function
 resource "aws_lambda_function" "shorten_url" {
   filename         = data.archive_file.shorten_url_lambda.output_path
@@ -525,6 +538,50 @@ resource "aws_lambda_permission" "resend_verification_api_gateway" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.resend_verification.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.url_shortener.execution_arn}/*/*"
+}
+
+# Submit Feedback Lambda Function
+resource "aws_lambda_function" "submit_feedback" {
+  filename         = data.archive_file.submit_feedback_lambda.output_path
+  function_name    = "${var.project_name}-${var.environment}-submit-feedback"
+  role            = aws_iam_role.lambda_execution_role.arn
+  handler         = "index.handler"
+  source_code_hash = data.archive_file.submit_feedback_lambda.output_base64sha256
+  runtime         = var.lambda_runtime
+  timeout         = var.lambda_timeout
+  memory_size     = var.lambda_memory_size
+
+  environment {
+    variables = {
+      FEEDBACK_TABLE_NAME = aws_dynamodb_table.feedback.name
+      AWS_REGION_CUSTOM   = var.aws_region
+      ENVIRONMENT         = var.environment
+    }
+  }
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.project_name}-${var.environment}-submit-feedback"
+    }
+  )
+}
+
+# CloudWatch Log Group for Submit Feedback Lambda
+resource "aws_cloudwatch_log_group" "submit_feedback_logs" {
+  name              = "/aws/lambda/${aws_lambda_function.submit_feedback.function_name}"
+  retention_in_days = 7
+
+  tags = var.tags
+}
+
+# Lambda permission for API Gateway to invoke Submit Feedback
+resource "aws_lambda_permission" "submit_feedback_api_gateway" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.submit_feedback.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.url_shortener.execution_arn}/*/*"
 }

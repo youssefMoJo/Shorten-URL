@@ -59,3 +59,41 @@ resource "aws_dynamodb_table" "url_mappings" {
     }
   )
 }
+
+# Feedback Table
+resource "aws_dynamodb_table" "feedback" {
+  name           = "${var.project_name}-${var.environment}-feedback"
+  billing_mode   = "PAY_PER_REQUEST"
+  hash_key       = "FeedbackId"
+
+  # Primary key attribute
+  attribute {
+    name = "FeedbackId"
+    type = "S"
+  }
+
+  # Timestamp attribute for sorting
+  attribute {
+    name = "CreatedAt"
+    type = "N"
+  }
+
+  # Global Secondary Index for querying by timestamp
+  global_secondary_index {
+    name            = "CreatedAtIndex"
+    hash_key        = "CreatedAt"
+    projection_type = "ALL"
+  }
+
+  # Enable point-in-time recovery for data protection
+  point_in_time_recovery {
+    enabled = true
+  }
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.project_name}-${var.environment}-feedback-table"
+    }
+  )
+}

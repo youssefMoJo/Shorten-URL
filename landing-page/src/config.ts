@@ -9,6 +9,7 @@ export const config = {
     endpoints: {
       signup: '/auth/signup',
       login: '/auth/login',
+      refreshToken: '/auth/refresh-token',
       forgotPassword: '/auth/forgot-password',
       resetPassword: '/auth/reset-password',
       shorten: '/shorten',

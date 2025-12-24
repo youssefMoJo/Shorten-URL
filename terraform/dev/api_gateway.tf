@@ -143,6 +143,31 @@ resource "aws_api_gateway_integration" "auth_login_lambda" {
   uri                     = aws_lambda_function.login.invoke_arn
 }
 
+# /auth/refresh-token resource
+resource "aws_api_gateway_resource" "auth_refresh_token" {
+  rest_api_id = aws_api_gateway_rest_api.url_shortener.id
+  parent_id   = aws_api_gateway_resource.auth.id
+  path_part   = "refresh-token"
+}
+
+# POST method for /auth/refresh-token
+resource "aws_api_gateway_method" "auth_refresh_token_post" {
+  rest_api_id   = aws_api_gateway_rest_api.url_shortener.id
+  resource_id   = aws_api_gateway_resource.auth_refresh_token.id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+# Integration for /auth/refresh-token POST
+resource "aws_api_gateway_integration" "auth_refresh_token_lambda" {
+  rest_api_id             = aws_api_gateway_rest_api.url_shortener.id
+  resource_id             = aws_api_gateway_resource.auth_refresh_token.id
+  http_method             = aws_api_gateway_method.auth_refresh_token_post.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.refresh_token.invoke_arn
+}
+
 # /auth/forgot-password resource
 resource "aws_api_gateway_resource" "auth_forgot_password" {
   rest_api_id = aws_api_gateway_rest_api.url_shortener.id

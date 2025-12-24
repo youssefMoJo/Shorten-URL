@@ -23,7 +23,7 @@ interface AuthContextType {
   verifyEmailAndLogin: (email: string, password: string, code: string) => Promise<void>;
   resendVerificationCode: (email: string) => Promise<void>;
   logout: () => void;
-  getIdToken: () => string | null;
+  getIdToken: () => Promise<string | null>;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
 }
@@ -34,17 +34,117 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserData | null>(null);
   const [idToken, setIdToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [logoutTimer, setLogoutTimer] = useState<number | null>(null);
+
+  // Clear logout timer
+  const clearLogoutTimer = () => {
+    if (logoutTimer) {
+      clearTimeout(logoutTimer);
+      setLogoutTimer(null);
+    }
+  };
+
+  // Setup auto-logout timer
+  const setupAutoLogout = (expiresIn: number) => {
+    clearLogoutTimer();
+
+    // Set timer to logout 30 seconds before token actually expires
+    // This gives a buffer for token refresh attempts
+    const timeoutDuration = (expiresIn - 30) * 1000;
+
+    if (timeoutDuration > 0) {
+      const timer = setTimeout(() => {
+        console.warn('Session expired. Logging out...');
+        logout();
+      }, timeoutDuration);
+
+      setLogoutTimer(timer);
+    }
+  };
+
+  // Refresh the access token using refresh token
+  const refreshAccessToken = async (): Promise<string | null> => {
+    const refreshToken = localStorage.getItem('refreshToken');
+
+    if (!refreshToken) {
+      console.error('No refresh token available');
+      logout();
+      return null;
+    }
+
+    try {
+      const response = await fetch(`${config.api.baseUrl}${config.api.endpoints.refreshToken}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      if (!response.ok) {
+        console.error('Token refresh failed');
+        logout();
+        return null;
+      }
+
+      const data = await response.json();
+
+      // Update tokens in state and localStorage
+      setIdToken(data.tokens.idToken);
+      localStorage.setItem('idToken', data.tokens.idToken);
+      localStorage.setItem('accessToken', data.tokens.accessToken);
+
+      // Calculate and store new expiry time
+      const expiryTime = Date.now() + (data.tokens.expiresIn * 1000);
+      localStorage.setItem('tokenExpiryTime', expiryTime.toString());
+
+      // Setup auto-logout for the new token
+      setupAutoLogout(data.tokens.expiresIn);
+
+      return data.tokens.idToken;
+    } catch (error) {
+      console.error('Error refreshing token:', error);
+      logout();
+      return null;
+    }
+  };
 
   useEffect(() => {
     // Check if user is already logged in (from localStorage)
     const storedUser = localStorage.getItem('user');
     const storedToken = localStorage.getItem('idToken');
-    
-    if (storedUser && storedToken) {
-      setUser(JSON.parse(storedUser));
-      setIdToken(storedToken);
+    const expiryTime = localStorage.getItem('tokenExpiryTime');
+
+    if (storedUser && storedToken && expiryTime) {
+      const expiryTimestamp = parseInt(expiryTime, 10);
+      const currentTime = Date.now();
+      const remainingTime = expiryTimestamp - currentTime;
+
+      // If token is still valid
+      if (remainingTime > 0) {
+        setUser(JSON.parse(storedUser));
+        setIdToken(storedToken);
+
+        // Setup auto-logout timer for remaining time
+        const remainingSeconds = Math.floor(remainingTime / 1000);
+        setupAutoLogout(remainingSeconds);
+      } else {
+        // Token expired, try to refresh
+        const attemptRefresh = async () => {
+          const newToken = await refreshAccessToken();
+          if (newToken) {
+            setUser(JSON.parse(storedUser));
+          }
+        };
+        attemptRefresh();
+      }
     }
     setIsLoading(false);
+
+    // Cleanup timer on unmount
+    return () => {
+      clearLogoutTimer();
+    };
   }, []);
 
   const signup = async (email: string, password: string): Promise<{ requiresVerification: boolean; email: string }> => {
@@ -146,23 +246,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(userData);
     setIdToken(data.tokens.idToken);
 
+    // Calculate and store token expiry time
+    const expiryTime = Date.now() + (data.tokens.expiresIn * 1000);
+
     // Store in localStorage
     localStorage.setItem('user', JSON.stringify(userData));
     localStorage.setItem('idToken', data.tokens.idToken);
     localStorage.setItem('accessToken', data.tokens.accessToken);
     localStorage.setItem('refreshToken', data.tokens.refreshToken);
+    localStorage.setItem('tokenExpiryTime', expiryTime.toString());
+
+    // Setup auto-logout timer
+    setupAutoLogout(data.tokens.expiresIn);
   };
 
   const logout = () => {
+    clearLogoutTimer();
     setUser(null);
     setIdToken(null);
     localStorage.removeItem('user');
     localStorage.removeItem('idToken');
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    localStorage.removeItem('tokenExpiryTime');
   };
 
-  const getIdToken = (): string | null => {
+  const getIdToken = async (): Promise<string | null> => {
+    // Check if token is expired
+    const expiryTime = localStorage.getItem('tokenExpiryTime');
+    if (!expiryTime) {
+      return idToken;
+    }
+
+    const expiryTimestamp = parseInt(expiryTime, 10);
+    const currentTime = Date.now();
+
+    // If token is about to expire (within 30 seconds), refresh it
+    if (currentTime >= (expiryTimestamp - 30000)) {
+      console.log('Token expiring soon, refreshing...');
+      const newToken = await refreshAccessToken();
+      return newToken;
+    }
+
     return idToken;
   };
 

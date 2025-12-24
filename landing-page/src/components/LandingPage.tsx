@@ -28,7 +28,7 @@ export function LandingPage() {
       };
 
       // Add Authorization header if user is authenticated
-      const token = getIdToken();
+      const token = await getIdToken();
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
       }
@@ -43,6 +43,25 @@ export function LandingPage() {
       );
 
       if (!response.ok) {
+        // If 401 and we had a token, it expired - remove auth header and retry as anonymous
+        if (response.status === 401 && token) {
+          console.warn('Token expired during request, retrying without auth');
+          delete headers["Authorization"];
+          const retryResponse = await fetch(
+            `${config.api.baseUrl}${config.api.endpoints.shorten}`,
+            {
+              method: "POST",
+              headers,
+              body: JSON.stringify({ long_link: url }),
+            }
+          );
+          if (!retryResponse.ok) {
+            throw new Error("Failed to shorten URL");
+          }
+          const retryData = await retryResponse.json();
+          setShortUrl(retryData.short_url);
+          return;
+        }
         throw new Error("Failed to shorten URL");
       }
 

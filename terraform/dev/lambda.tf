@@ -149,6 +149,19 @@ data "archive_file" "submit_feedback_lambda" {
   ]
 }
 
+data "archive_file" "refresh_token_lambda" {
+  type        = "zip"
+  source_dir  = "${path.module}/../../lambda/refreshToken"
+  output_path = "${path.module}/lambda_packages/refreshToken.zip"
+
+  excludes = [
+    "node_modules",
+    "package-lock.json",
+    ".git",
+    ".gitignore"
+  ]
+}
+
 # Shorten URL Lambda Function
 resource "aws_lambda_function" "shorten_url" {
   filename         = data.archive_file.shorten_url_lambda.output_path
@@ -364,6 +377,50 @@ resource "aws_lambda_permission" "login_api_gateway" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.login.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.url_shortener.execution_arn}/*/*"
+}
+
+# Refresh Token Lambda Function
+resource "aws_lambda_function" "refresh_token" {
+  filename         = data.archive_file.refresh_token_lambda.output_path
+  function_name    = "${var.project_name}-${var.environment}-refresh-token"
+  role            = aws_iam_role.lambda_execution_role.arn
+  handler         = "index.handler"
+  source_code_hash = data.archive_file.refresh_token_lambda.output_base64sha256
+  runtime         = var.lambda_runtime
+  timeout         = var.lambda_timeout
+  memory_size     = var.lambda_memory_size
+
+  environment {
+    variables = {
+      COGNITO_CLIENT_ID = aws_cognito_user_pool_client.url_shortener.id
+      AWS_REGION_CUSTOM = var.aws_region
+      ENVIRONMENT       = var.environment
+    }
+  }
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.project_name}-${var.environment}-refresh-token"
+    }
+  )
+}
+
+# CloudWatch Log Group for Refresh Token Lambda
+resource "aws_cloudwatch_log_group" "refresh_token_logs" {
+  name              = "/aws/lambda/${aws_lambda_function.refresh_token.function_name}"
+  retention_in_days = 7
+
+  tags = var.tags
+}
+
+# Lambda permission for API Gateway to invoke Refresh Token
+resource "aws_lambda_permission" "refresh_token_api_gateway" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.refresh_token.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.url_shortener.execution_arn}/*/*"
 }

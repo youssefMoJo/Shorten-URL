@@ -17,7 +17,7 @@ export function Dashboard() {
   const [isFetchingLinks, setIsFetchingLinks] = useState(true);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const { getIdToken } = useAuth();
+  const { getIdToken, logout } = useAuth();
 
   useEffect(() => {
     fetchUserLinks();
@@ -26,7 +26,7 @@ export function Dashboard() {
   const fetchUserLinks = async () => {
     try {
       setIsFetchingLinks(true);
-      const token = getIdToken();
+      const token = await getIdToken();
 
       const response = await fetch(
         `${config.api.baseUrl}${config.api.endpoints.meLinks}`,
@@ -38,6 +38,12 @@ export function Dashboard() {
       );
 
       if (!response.ok) {
+        // If 401 Unauthorized, token has expired - force logout
+        if (response.status === 401) {
+          console.error('Session expired. Logging out...');
+          logout();
+          return;
+        }
         throw new Error("Failed to fetch links");
       }
 
@@ -68,7 +74,7 @@ export function Dashboard() {
     setIsLoading(true);
 
     try {
-      const token = getIdToken();
+      const token = await getIdToken();
 
       const response = await fetch(
         `${config.api.baseUrl}${config.api.endpoints.shorten}`,
@@ -83,6 +89,12 @@ export function Dashboard() {
       );
 
       if (!response.ok) {
+        // If 401 Unauthorized, token has expired - force logout
+        if (response.status === 401) {
+          console.error('Session expired. Logging out...');
+          logout();
+          return;
+        }
         throw new Error("Failed to shorten URL");
       }
 

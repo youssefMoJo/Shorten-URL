@@ -1,135 +1,440 @@
-document.addEventListener("DOMContentLoaded", function () {
-  const loadingContainer = document.querySelector(".loading-container");
-  const urlDisplay = document.querySelector("#url-display");
-  const copyButton = document.querySelector("#copy-button");
-  const content = document.querySelector(".content");
+// Main popup logic with authentication and history
 
-  // Function to copy text to clipboard with visual feedback
-  const copyToClipboard = async (text) => {
-    try {
-      // Use modern clipboard API
-      await navigator.clipboard.writeText(text);
+let currentAuthState = null;
+let isGuestMode = false;
 
-      // Add visual feedback
-      copyButton.classList.add("copied");
+document.addEventListener("DOMContentLoaded", async function () {
+  // Initialize auth state
+  currentAuthState = await auth.getAuthState();
 
-      // Update button content
-      const originalContent = copyButton.innerHTML;
-      copyButton.innerHTML = `
-        <svg class="button-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        Copied!
-      `;
+  // Initialize UI based on auth state
+  await initializeUI();
 
-      // Revert after 2 seconds
-      setTimeout(function () {
-        copyButton.classList.remove("copied");
-        copyButton.innerHTML = originalContent;
-      }, 2000);
-    } catch (err) {
-      // Fallback for older browsers
-      const input = document.createElement("input");
-      input.value = text;
-      document.body.appendChild(input);
-      input.select();
-      document.execCommand("copy");
-      document.body.removeChild(input);
+  // Setup event listeners
+  setupEventListeners();
 
-      copyButton.classList.add("copied");
-      const originalText = copyButton.textContent;
-      copyButton.textContent = "Copied!";
+  // If authenticated or guest mode, proceed to shorten URL
+  if (currentAuthState.isAuthenticated || isGuestMode) {
+    await shortenCurrentTab();
+  }
+});
 
-      setTimeout(function () {
-        copyButton.classList.remove("copied");
-        copyButton.textContent = originalText;
-      }, 2000);
+// Initialize UI based on authentication state
+async function initializeUI() {
+  const userProfile = document.getElementById("user-profile");
+  const authForm = document.getElementById("auth-form");
+  const dashboardLink = document.getElementById("dashboard-link");
+  const historySection = document.getElementById("history-section");
+
+  if (currentAuthState.isAuthenticated) {
+    // Show user profile
+    userProfile.style.display = "flex";
+    document.getElementById("user-email").textContent = currentAuthState.user.email;
+
+    // Show dashboard link
+    dashboardLink.style.display = "flex";
+    dashboardLink.href = CONFIG.website.dashboardUrl;
+
+    // Hide auth form
+    authForm.style.display = "none";
+
+    // Load and display history
+    await loadHistory();
+    historySection.style.display = "block";
+  } else {
+    // Show auth form
+    authForm.style.display = "block";
+    userProfile.style.display = "none";
+    dashboardLink.style.display = "none";
+    historySection.style.display = "none";
+  }
+}
+
+// Setup all event listeners
+function setupEventListeners() {
+  // Logout button
+  document.getElementById("logout-button").addEventListener("click", handleLogout);
+
+  // Login form
+  document.getElementById("login-submit").addEventListener("click", handleLogin);
+  document.getElementById("login-password").addEventListener("keypress", function(e) {
+    if (e.key === "Enter") handleLogin();
+  });
+
+  // Signup form
+  document.getElementById("signup-submit").addEventListener("click", handleSignup);
+  document.getElementById("signup-password").addEventListener("keypress", function(e) {
+    if (e.key === "Enter") handleSignup();
+  });
+
+  // Switch between login/signup
+  document.getElementById("show-signup").addEventListener("click", function(e) {
+    e.preventDefault();
+    document.getElementById("login-view").style.display = "none";
+    document.getElementById("signup-view").style.display = "block";
+    clearErrors();
+  });
+
+  document.getElementById("show-login").addEventListener("click", function(e) {
+    e.preventDefault();
+    document.getElementById("signup-view").style.display = "none";
+    document.getElementById("login-view").style.display = "block";
+    clearErrors();
+  });
+
+  // Continue as guest
+  document.getElementById("guest-continue").addEventListener("click", handleGuestMode);
+
+  // Copy button
+  document.getElementById("copy-button").addEventListener("click", async function() {
+    const urlDisplay = document.getElementById("url-display");
+    const shortURL = urlDisplay.textContent;
+    await copyToClipboard(shortURL);
+  });
+}
+
+// Handle login
+async function handleLogin() {
+  const email = document.getElementById("login-email").value.trim();
+  const password = document.getElementById("login-password").value;
+  const errorDiv = document.getElementById("auth-error");
+  const submitButton = document.getElementById("login-submit");
+
+  // Validate inputs
+  if (!email || !password) {
+    showError(errorDiv, "Please enter both email and password");
+    return;
+  }
+
+  // Disable button and show loading
+  submitButton.disabled = true;
+  submitButton.textContent = "Logging in...";
+
+  try {
+    await auth.login(email, password);
+
+    // Update auth state
+    currentAuthState = await auth.getAuthState();
+
+    // Reinitialize UI
+    await initializeUI();
+
+    // Shorten current tab
+    await shortenCurrentTab();
+  } catch (error) {
+    showError(errorDiv, error.message);
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = "Login";
+  }
+}
+
+// Handle signup
+async function handleSignup() {
+  const email = document.getElementById("signup-email").value.trim();
+  const password = document.getElementById("signup-password").value;
+  const errorDiv = document.getElementById("signup-error");
+  const successDiv = document.getElementById("signup-success");
+  const submitButton = document.getElementById("signup-submit");
+
+  // Validate inputs
+  if (!email || !password) {
+    showError(errorDiv, "Please enter both email and password");
+    return;
+  }
+
+  if (password.length < 8) {
+    showError(errorDiv, "Password must be at least 8 characters");
+    return;
+  }
+
+  // Disable button and show loading
+  submitButton.disabled = true;
+  submitButton.textContent = "Signing up...";
+
+  try {
+    const result = await auth.signup(email, password);
+
+    if (result.requiresVerification) {
+      hideError(errorDiv);
+      showSuccess(successDiv, "Account created! Please check your email to verify your account, then login.");
+
+      // Clear form
+      document.getElementById("signup-email").value = "";
+      document.getElementById("signup-password").value = "";
+
+      // Switch to login view after 3 seconds
+      setTimeout(() => {
+        document.getElementById("signup-view").style.display = "none";
+        document.getElementById("login-view").style.display = "block";
+        document.getElementById("login-email").value = email;
+      }, 3000);
     }
-  };
+  } catch (error) {
+    showError(errorDiv, error.message);
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = "Sign Up";
+  }
+}
 
-  // Function to make the API request and handle the response
-  const getShortURL = async (longURL) => {
-    try {
-      const response = await fetch("https://shorturl.life/shorten", {
-        method: "POST",
-        body: JSON.stringify({ long_link: longURL }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+// Handle guest mode
+async function handleGuestMode() {
+  isGuestMode = true;
+  document.getElementById("auth-form").style.display = "none";
+  await shortenCurrentTab();
+}
 
-      if (response.ok) {
-        const data = await response.json();
-        return data;
-      } else {
-        return null;
+// Handle logout
+async function handleLogout() {
+  await auth.logout();
+  await clearHistory();
+
+  // Reset state
+  currentAuthState = await auth.getAuthState();
+  isGuestMode = false;
+
+  // Reset UI
+  document.getElementById("user-profile").style.display = "none";
+  document.getElementById("auth-form").style.display = "block";
+  document.getElementById("login-view").style.display = "block";
+  document.getElementById("signup-view").style.display = "none";
+  document.getElementById("dashboard-link").style.display = "none";
+  document.getElementById("history-section").style.display = "none";
+
+  // Clear forms
+  document.getElementById("login-email").value = "";
+  document.getElementById("login-password").value = "";
+  clearErrors();
+}
+
+// Shorten the current tab's URL
+async function shortenCurrentTab() {
+  const loadingContainer = document.querySelector(".loading-container");
+  const content = document.querySelector(".content");
+  const urlDisplay = document.getElementById("url-display");
+  const copyButton = document.getElementById("copy-button");
+
+  try {
+    // Get current tab URL
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    const url = tabs[0].url;
+
+    // Show loading state
+    content.style.display = "none";
+    loadingContainer.style.display = "flex";
+
+    // Get ID token if authenticated
+    let idToken = null;
+    if (currentAuthState.isAuthenticated) {
+      idToken = await auth.getIdToken();
+    }
+
+    // Make API request
+    const shortURL = await getShortURL(url, idToken);
+
+    // Hide loading
+    loadingContainer.style.display = "none";
+    content.style.display = "flex";
+
+    if (shortURL) {
+      // Display short URL
+      urlDisplay.textContent = shortURL;
+      urlDisplay.classList.remove("error");
+      copyButton.style.display = "flex";
+
+      // Auto-copy to clipboard
+      await copyToClipboard(shortURL);
+
+      // Save to history if authenticated
+      if (currentAuthState.isAuthenticated) {
+        await saveToHistory(url, shortURL);
+        await loadHistory();
       }
-    } catch (error) {
-      console.error(error);
+    } else {
+      // Show error
+      urlDisplay.textContent = "Failed to shorten URL. Please try again.";
+      urlDisplay.classList.add("error");
+      copyButton.style.display = "none";
+    }
+  } catch (error) {
+    console.error("Error shortening URL:", error);
+    loadingContainer.style.display = "none";
+    content.style.display = "flex";
+    urlDisplay.textContent = "An error occurred. Please try again.";
+    urlDisplay.classList.add("error");
+    copyButton.style.display = "none";
+  }
+}
+
+// Make API request to shorten URL
+async function getShortURL(longURL, idToken) {
+  try {
+    const headers = {
+      "Content-Type": "application/json",
+    };
+
+    if (idToken) {
+      headers["Authorization"] = `Bearer ${idToken}`;
+    }
+
+    const response = await fetch(`${CONFIG.api.baseUrl}${CONFIG.api.endpoints.shorten}`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ long_link: longURL }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data.short_url;
+    } else if (response.status === 401 && idToken) {
+      // Token expired, logout
+      await auth.logout();
+      showError(document.getElementById("auth-error"), "Session expired. Please login again.");
+      await handleLogout();
+      return null;
+    } else {
       return null;
     }
-  };
+  } catch (error) {
+    console.error("API error:", error);
+    return null;
+  }
+}
 
-  // Get the current tab's URL and display it
-  chrome.tabs.query(
-    { active: true, currentWindow: true },
-    async function (tabs) {
-      const url = tabs[0].url;
+// Copy to clipboard with visual feedback
+async function copyToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
 
-      // Show loading state
-      content.style.display = "none";
-      loadingContainer.style.display = "flex";
+    const copyButton = document.getElementById("copy-button");
+    const originalContent = copyButton.innerHTML;
 
-      // Make the API request to shorten the URL
-      const shortURL = await getShortURL(url);
+    copyButton.classList.add("copied");
+    copyButton.innerHTML = `
+      <svg class="button-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Copied!
+    `;
 
-      // Hide the loading indicator and show content
-      loadingContainer.style.display = "none";
-      content.style.display = "flex";
+    setTimeout(() => {
+      copyButton.classList.remove("copied");
+      copyButton.innerHTML = originalContent;
+    }, 2000);
+  } catch (err) {
+    console.error("Copy failed:", err);
+  }
+}
 
-      if (shortURL) {
-        // Create a clickable element for the short URL
-        const shortURLLink = document.createElement("a");
-        shortURLLink.href = "#";
-        shortURLLink.textContent = shortURL;
-        shortURLLink.style.cursor = "pointer";
+// History management
+async function saveToHistory(originalURL, shortURL) {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['linkHistory'], (data) => {
+      let history = data.linkHistory || [];
 
-        // Copy URL when clicked instead of opening
-        shortURLLink.addEventListener("click", async function (e) {
-          e.preventDefault();
-          await copyToClipboard(shortURL);
-        });
+      // Add new link to beginning
+      history.unshift({
+        originalURL,
+        shortURL,
+        timestamp: Date.now()
+      });
 
-        // Clear and append the anchor element to the display container
-        urlDisplay.innerHTML = "";
-        urlDisplay.appendChild(shortURLLink);
+      // Keep only last 10 items
+      history = history.slice(0, CONFIG.maxHistoryItems);
 
-        // Show copy button with animation
-        copyButton.style.display = "flex";
+      chrome.storage.local.set({ linkHistory: history }, resolve);
+    });
+  });
+}
 
-        // Automatically copy the short URL to clipboard on first load
-        await copyToClipboard(shortURL);
+async function loadHistory() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['linkHistory'], (data) => {
+      const history = data.linkHistory || [];
+      const historyList = document.getElementById("history-list");
 
-        // Copy the short URL to the clipboard when the button is clicked
-        copyButton.addEventListener("click", async function () {
-          await copyToClipboard(shortURL);
-        });
-      } else {
-        // Show error state
-        urlDisplay.innerHTML = "";
-        urlDisplay.textContent = "Failed to shorten URL. Please try again.";
-        urlDisplay.classList.add("error");
-        copyButton.style.display = "none";
+      historyList.innerHTML = "";
+
+      if (history.length === 0) {
+        resolve();
+        return;
       }
 
-      // Handle validation error message
-      if (typeof shortURL === 'string' && shortURL.includes("Please enter a valid long URL")) {
-        urlDisplay.innerHTML = "";
-        urlDisplay.textContent = shortURL;
-        urlDisplay.classList.add("error");
-        urlDisplay.style.cursor = "default";
-        copyButton.style.display = "none";
-      }
-    }
-  );
-});
+      history.forEach((item) => {
+        const historyItem = document.createElement("div");
+        historyItem.className = "history-item";
+
+        const urlInfo = document.createElement("div");
+        urlInfo.className = "history-url-info";
+
+        const shortURLSpan = document.createElement("span");
+        shortURLSpan.className = "history-short-url";
+        shortURLSpan.textContent = item.shortURL;
+
+        const originalURLSpan = document.createElement("span");
+        originalURLSpan.className = "history-original-url";
+        originalURLSpan.textContent = truncateURL(item.originalURL, 40);
+
+        urlInfo.appendChild(shortURLSpan);
+        urlInfo.appendChild(originalURLSpan);
+
+        const copyBtn = document.createElement("button");
+        copyBtn.className = "history-copy-btn";
+        copyBtn.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="2"/>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        `;
+        copyBtn.title = "Copy";
+        copyBtn.addEventListener("click", async () => {
+          await navigator.clipboard.writeText(item.shortURL);
+          copyBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2"/></svg>`;
+          setTimeout(() => {
+            copyBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="2"/></svg>`;
+          }, 1000);
+        });
+
+        historyItem.appendChild(urlInfo);
+        historyItem.appendChild(copyBtn);
+        historyList.appendChild(historyItem);
+      });
+
+      resolve();
+    });
+  });
+}
+
+async function clearHistory() {
+  return new Promise((resolve) => {
+    chrome.storage.local.remove(['linkHistory'], resolve);
+  });
+}
+
+// Helper functions
+function truncateURL(url, maxLength) {
+  if (url.length <= maxLength) return url;
+  return url.substring(0, maxLength - 3) + "...";
+}
+
+function showError(errorDiv, message) {
+  errorDiv.textContent = message;
+  errorDiv.style.display = "block";
+}
+
+function hideError(errorDiv) {
+  errorDiv.textContent = "";
+  errorDiv.style.display = "none";
+}
+
+function showSuccess(successDiv, message) {
+  successDiv.textContent = message;
+  successDiv.style.display = "block";
+}
+
+function clearErrors() {
+  hideError(document.getElementById("auth-error"));
+  hideError(document.getElementById("signup-error"));
+  document.getElementById("signup-success").style.display = "none";
+}

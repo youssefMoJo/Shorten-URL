@@ -20,6 +20,54 @@
         <p class="subtitle">Simplify your links instantly</p>
       </div>
 
+      <!-- User Profile Bar (shown when logged in) -->
+      <div id="user-profile" class="user-profile" style="display: none;">
+        <div class="user-info">
+          <svg class="user-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/>
+            <path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <span id="user-email" class="user-email"></span>
+        </div>
+        <button id="logout-button" class="logout-button">Logout</button>
+      </div>
+
+      <!-- Auth Form (shown when not logged in) -->
+      <div id="auth-form" class="auth-form" style="display: none;">
+        <p class="auth-message">Save links to your account!</p>
+
+        <div id="login-view" class="auth-view">
+          <div class="input-group">
+            <input type="email" id="login-email" class="auth-input" placeholder="Email" required>
+          </div>
+          <div class="input-group">
+            <input type="password" id="login-password" class="auth-input" placeholder="Password" required>
+          </div>
+          <div id="auth-error" class="auth-error" style="display: none;"></div>
+          <button id="login-submit" class="auth-button">Login</button>
+          <p class="auth-switch">
+            Don't have an account? <a href="#" id="show-signup">Sign Up</a>
+          </p>
+          <button id="guest-continue" class="guest-button">Continue as Guest</button>
+        </div>
+
+        <div id="signup-view" class="auth-view" style="display: none;">
+          <div class="input-group">
+            <input type="email" id="signup-email" class="auth-input" placeholder="Email" required>
+          </div>
+          <div class="input-group">
+            <input type="password" id="signup-password" class="auth-input" placeholder="Password (min 8 characters)" required>
+          </div>
+          <div id="signup-error" class="auth-error" style="display: none;"></div>
+          <div id="signup-success" class="auth-success" style="display: none;"></div>
+          <button id="signup-submit" class="auth-button">Sign Up</button>
+          <p class="auth-switch">
+            Already have an account? <a href="#" id="show-login">Login</a>
+          </p>
+        </div>
+      </div>
+
+      <!-- Loading State -->
       <div class="loading-container">
         <div class="loader-wrapper">
           <div class="loader"></div>
@@ -27,6 +75,7 @@
         </div>
       </div>
 
+      <!-- Main Content (URL Display) -->
       <div class="content">
         <div id="url-display" class="short-url-container"></div>
         <button id="copy-button" class="copy-button">
@@ -38,17 +87,37 @@
         </button>
       </div>
 
+      <!-- Link History -->
+      <div id="history-section" class="history-section" style="display: none;">
+        <h3 class="history-title">Recent Links</h3>
+        <div id="history-list" class="history-list"></div>
+      </div>
+
+      <!-- Footer -->
       <div class="footer">
-        <a href="https://shortenurl.youssefmohamed.ca/" target="_blank" rel="noopener noreferrer" class="website-link">
-          <svg class="website-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-            <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" stroke="currentColor" stroke-width="2"/>
-          </svg>
-          Visit Website
-        </a>
+        <div class="footer-links">
+          <a href="https://shorturl.life" target="_blank" rel="noopener noreferrer" class="footer-link">
+            <svg class="footer-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+              <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            Visit Website
+          </a>
+          <a id="dashboard-link" href="#" target="_blank" rel="noopener noreferrer" class="footer-link" style="display: none;">
+            <svg class="footer-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
+              <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
+              <rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
+              <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            View Dashboard
+          </a>
+        </div>
         <p class="signature">Created by <a href="https://youssefmohamed.ca/" target="_blank" rel="noopener noreferrer">Youssef Mohamed</a></p>
       </div>
     </div>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

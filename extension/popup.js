@@ -4,6 +4,13 @@ let currentAuthState = null;
 let isGuestMode = false;
 
 document.addEventListener("DOMContentLoaded", async function () {
+  // Check if running in extension context
+  if (typeof chrome === 'undefined' || !chrome.storage || !chrome.tabs) {
+    console.error('This extension must be loaded in Chrome as an extension.');
+    document.querySelector('.content').innerHTML = '<div style="padding: 20px; text-align: center; color: #dc2626;">Please load this as a Chrome extension.</div>';
+    return;
+  }
+
   // Initialize auth state
   currentAuthState = await auth.getAuthState();
 

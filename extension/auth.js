@@ -2,11 +2,27 @@
 
 class Auth {
   constructor() {
-    this.storage = chrome.storage.local;
+    // Check if chrome.storage is available (extension context)
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      this.storage = chrome.storage.local;
+    } else {
+      console.error('Chrome storage API not available. Make sure this is running as a Chrome extension.');
+      this.storage = null;
+    }
   }
 
   // Get authentication state
   async getAuthState() {
+    if (!this.storage) {
+      return {
+        isAuthenticated: false,
+        user: null,
+        idToken: null,
+        refreshToken: null,
+        tokenExpiryTime: null
+      };
+    }
+
     return new Promise((resolve) => {
       this.storage.get(['user', 'idToken', 'refreshToken', 'tokenExpiryTime'], (data) => {
         const isAuthenticated = !!(data.user && data.idToken && data.refreshToken);
@@ -175,6 +191,10 @@ class Auth {
 
   // Update tokens in storage
   async updateTokens(tokens) {
+    if (!this.storage) {
+      console.warn('Storage not available');
+      return;
+    }
     return new Promise((resolve) => {
       this.storage.set(tokens, resolve);
     });
@@ -182,6 +202,10 @@ class Auth {
 
   // Logout user
   async logout() {
+    if (!this.storage) {
+      console.warn('Storage not available');
+      return;
+    }
     return new Promise((resolve) => {
       this.storage.remove(['user', 'idToken', 'accessToken', 'refreshToken', 'tokenExpiryTime'], resolve);
     });

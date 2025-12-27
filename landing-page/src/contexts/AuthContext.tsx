@@ -141,9 +141,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     setIsLoading(false);
 
-    // Cleanup timer on unmount
+    // Listen for auth state requests from Chrome extension
+    const handleExtensionMessage = (event: MessageEvent) => {
+      // Accept messages from same origin (for security)
+      // The content script runs in the same page context, so origin will match
+      const allowedOrigins = [
+        'https://shorturl.life',
+        'http://localhost:5173',
+        'http://localhost:3000',
+        window.location.origin
+      ];
+
+      if (!allowedOrigins.includes(event.origin)) {
+        return;
+      }
+
+      // Handle auth state request from extension
+      if (event.data.type === 'SHORTURL_REQUEST_AUTH_STATE') {
+        const storedUser = localStorage.getItem('user');
+        const storedIdToken = localStorage.getItem('idToken');
+        const storedAccessToken = localStorage.getItem('accessToken');
+        const storedRefreshToken = localStorage.getItem('refreshToken');
+
+        // If user is logged in, send auth data to extension
+        if (storedUser && storedIdToken && storedRefreshToken) {
+          const userData = JSON.parse(storedUser);
+
+          // Calculate remaining time for expiresIn
+          const expiryTime = localStorage.getItem('tokenExpiryTime');
+          let expiresIn = 3600; // default 1 hour
+          if (expiryTime) {
+            const expiryTimestamp = parseInt(expiryTime, 10);
+            const currentTime = Date.now();
+            expiresIn = Math.max(0, Math.floor((expiryTimestamp - currentTime) / 1000));
+          }
+
+          window.postMessage({
+            type: 'SHORTURL_AUTH_SUCCESS',
+            payload: {
+              userId: userData.userId,
+              email: userData.email,
+              tokens: {
+                idToken: storedIdToken,
+                accessToken: storedAccessToken,
+                refreshToken: storedRefreshToken,
+                expiresIn: expiresIn
+              }
+            }
+          }, '*');
+        }
+      }
+    };
+
+    window.addEventListener('message', handleExtensionMessage);
+
+    // Cleanup timer and event listener on unmount
     return () => {
       clearLogoutTimer();
+      window.removeEventListener('message', handleExtensionMessage);
     };
   }, []);
 
@@ -258,6 +313,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Setup auto-logout timer
     setupAutoLogout(data.tokens.expiresIn);
+
+    // Send auth data to Chrome extension (if installed)
+    window.postMessage({
+      type: 'SHORTURL_AUTH_SUCCESS',
+      payload: {
+        userId: data.userId,
+        email: data.email,
+        tokens: data.tokens
+      }
+    }, '*');
   };
 
   const logout = () => {
@@ -269,6 +334,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('tokenExpiryTime');
+
+    // Send logout event to Chrome extension (if installed)
+    window.postMessage({ type: 'SHORTURL_LOGOUT' }, '*');
   };
 
   const getIdToken = async (): Promise<string | null> => {

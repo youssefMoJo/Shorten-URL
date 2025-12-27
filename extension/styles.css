@@ -404,6 +404,97 @@ body {
   transform: scale(0.95);
 }
 
+/* Auth Prompt (New simplified UI) */
+.auth-prompt {
+  display: none;
+  background: white;
+  padding: 32px 24px;
+  text-align: center;
+  animation: slideDown 0.4s ease-out;
+}
+
+.auth-prompt-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.auth-prompt-icon {
+  width: 56px;
+  height: 56px;
+  color: #667eea;
+  margin-bottom: 8px;
+}
+
+.auth-prompt-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.auth-prompt-subtitle {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.auth-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.auth-website-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 14px 24px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Inter', sans-serif;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.auth-website-button svg {
+  width: 18px;
+  height: 18px;
+  color: currentColor;
+}
+
+.auth-website-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.auth-website-button:active {
+  transform: translateY(0);
+}
+
+.auth-website-button.secondary {
+  background: transparent;
+  color: #667eea;
+  border: 2px solid #e5e7eb;
+  box-shadow: none;
+}
+
+.auth-website-button.secondary:hover {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.05);
+  box-shadow: none;
+}
+
 /* Auth Form */
 .auth-form {
   display: none;

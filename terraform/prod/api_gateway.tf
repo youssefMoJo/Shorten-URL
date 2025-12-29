@@ -86,6 +86,35 @@ resource "aws_api_gateway_integration" "expand_lambda" {
   uri                     = aws_lambda_function.expand_url.invoke_arn
 }
 
+# /{short} resource at root level (for clean short URLs like shorturl.life/ABC123)
+resource "aws_api_gateway_resource" "root_short" {
+  rest_api_id = aws_api_gateway_rest_api.url_shortener.id
+  parent_id   = aws_api_gateway_rest_api.url_shortener.root_resource_id
+  path_part   = "{short}"
+}
+
+# GET method for /{short}
+resource "aws_api_gateway_method" "root_short_get" {
+  rest_api_id   = aws_api_gateway_rest_api.url_shortener.id
+  resource_id   = aws_api_gateway_resource.root_short.id
+  http_method   = "GET"
+  authorization = "NONE"
+
+  request_parameters = {
+    "method.request.path.short" = true
+  }
+}
+
+# Integration for /{short} GET - uses the same expand Lambda
+resource "aws_api_gateway_integration" "root_short_lambda" {
+  rest_api_id             = aws_api_gateway_rest_api.url_shortener.id
+  resource_id             = aws_api_gateway_resource.root_short.id
+  http_method             = aws_api_gateway_method.root_short_get.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.expand_url.invoke_arn
+}
+
 # /auth resource (for authentication endpoints)
 resource "aws_api_gateway_resource" "auth" {
   rest_api_id = aws_api_gateway_rest_api.url_shortener.id
@@ -823,6 +852,7 @@ resource "aws_api_gateway_deployment" "url_shortener" {
   depends_on = [
     aws_api_gateway_integration.shorten_lambda,
     aws_api_gateway_integration.expand_lambda,
+    aws_api_gateway_integration.root_short_lambda,
     aws_api_gateway_integration.me_links_lambda,
     aws_api_gateway_integration.auth_signup_lambda,
     aws_api_gateway_integration.auth_login_lambda,
@@ -852,6 +882,7 @@ resource "aws_api_gateway_deployment" "url_shortener" {
       aws_api_gateway_resource.shorten.id,
       aws_api_gateway_resource.expand.id,
       aws_api_gateway_resource.expand_short.id,
+      aws_api_gateway_resource.root_short.id,
       aws_api_gateway_resource.me.id,
       aws_api_gateway_resource.me_links.id,
       aws_api_gateway_resource.auth.id,
@@ -864,6 +895,7 @@ resource "aws_api_gateway_deployment" "url_shortener" {
       aws_api_gateway_resource.feedback.id,
       aws_api_gateway_method.shorten_post.id,
       aws_api_gateway_method.expand_get.id,
+      aws_api_gateway_method.root_short_get.id,
       aws_api_gateway_method.me_links_get.id,
       aws_api_gateway_method.auth_signup_post.id,
       aws_api_gateway_method.auth_login_post.id,
@@ -874,6 +906,7 @@ resource "aws_api_gateway_deployment" "url_shortener" {
       aws_api_gateway_method.feedback_post.id,
       aws_api_gateway_integration.shorten_lambda.id,
       aws_api_gateway_integration.expand_lambda.id,
+      aws_api_gateway_integration.root_short_lambda.id,
       aws_api_gateway_integration.me_links_lambda.id,
       aws_api_gateway_integration.auth_signup_lambda.id,
       aws_api_gateway_integration.auth_login_lambda.id,

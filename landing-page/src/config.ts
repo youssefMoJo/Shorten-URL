@@ -1,11 +1,11 @@
 export const config = {
   cognito: {
-    userPoolId: 'ca-central-1_XTnOHGP3K',
-    clientId: '22an9mv4k84jl5latoi3qkkgpp',
+    userPoolId: 'ca-central-1_FHqEoPqvA',
+    clientId: '367rnle23g4cmjaaiq35anhjuj',
     region: 'ca-central-1'
   },
   api: {
-    baseUrl: 'https://kb5qj23lyl.execute-api.ca-central-1.amazonaws.com/dev',
+    baseUrl: 'https://shorturl.life',
     endpoints: {
       signup: '/auth/signup',
       login: '/auth/login',

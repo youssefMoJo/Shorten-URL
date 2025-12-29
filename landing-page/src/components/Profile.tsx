@@ -24,7 +24,7 @@ export function Profile() {
     setIsSendingCode(true);
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL || "https://kb5qj23lyl.execute-api.ca-central-1.amazonaws.com/dev"}/auth/forgot-password`,
+        `${import.meta.env.VITE_API_URL || "https://shorturl.life"}/auth/forgot-password`,
         {
           method: "POST",
           headers: {

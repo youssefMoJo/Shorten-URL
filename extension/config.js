@@ -1,7 +1,7 @@
-// API Configuration - DEV ENVIRONMENT
+// API Configuration - PRODUCTION ENVIRONMENT
 const CONFIG = {
   api: {
-    baseUrl: 'https://dev.shorturl.life',
+    baseUrl: 'https://shorturl.life',
     endpoints: {
       signup: '/auth/signup',
       login: '/auth/login',
@@ -11,8 +11,8 @@ const CONFIG = {
     }
   },
   website: {
-    url: 'https://dev.shorturl.life',
-    dashboardUrl: 'https://dev.shorturl.life/dashboard'
+    url: 'https://shorturl.life',
+    dashboardUrl: 'https://shorturl.life/dashboard'
   },
   tokenExpiryBuffer: 30000, // 30 seconds before actual expiry
   maxHistoryItems: 10

@@ -31,7 +31,7 @@ export function Feedback() {
     try {
       const apiUrl =
         import.meta.env.VITE_API_URL ||
-        "https://kb5qj23lyl.execute-api.ca-central-1.amazonaws.com/dev";
+        "https://shorturl.life";
 
       const response = await fetch(`${apiUrl}/feedback`, {
         method: "POST",

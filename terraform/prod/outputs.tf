@@ -125,3 +125,24 @@ output "region" {
   description = "The AWS region"
   value       = var.aws_region
 }
+
+output "custom_domain_name" {
+  description = "The custom domain name for the API"
+  value       = aws_api_gateway_domain_name.prod_domain.domain_name
+}
+
+output "custom_domain_url" {
+  description = "The custom domain URL for the API"
+  value       = "https://${aws_api_gateway_domain_name.prod_domain.domain_name}"
+}
+
+output "custom_api_endpoints" {
+  description = "API endpoints using the custom domain"
+  value = {
+    signup   = "https://${aws_api_gateway_domain_name.prod_domain.domain_name}/auth/signup"
+    login    = "https://${aws_api_gateway_domain_name.prod_domain.domain_name}/auth/login"
+    shorten  = "https://${aws_api_gateway_domain_name.prod_domain.domain_name}/shorten"
+    expand   = "https://${aws_api_gateway_domain_name.prod_domain.domain_name}/expand/{short}"
+    me_links = "https://${aws_api_gateway_domain_name.prod_domain.domain_name}/me/links"
+  }
+}

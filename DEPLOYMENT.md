@@ -2,6 +2,61 @@
 
 This document outlines how to promote changes from development to production.
 
+## Custom Domain Setup
+
+The dev environment uses `dev.shorturl.life` subdomain for testing with the actual domain before promoting to production.
+
+### Prerequisites
+- Route 53 hosted zone for `shorturl.life` must exist
+- AWS credentials configured with permissions for Route 53, ACM, and API Gateway
+
+### Setting Up dev.shorturl.life
+
+1. **Apply the custom domain configuration:**
+   ```bash
+   cd terraform/dev
+   terraform init
+   terraform plan
+   terraform apply
+   ```
+
+2. **Certificate validation:**
+   - ACM will automatically create DNS validation records in Route 53
+   - Wait 5-10 minutes for DNS propagation and certificate validation
+   - You can check status with:
+     ```bash
+     terraform output custom_domain_url
+     ```
+
+3. **Verify the setup:**
+   ```bash
+   # Get the custom domain endpoints
+   terraform output custom_api_endpoints
+
+   # Test the shorten endpoint
+   curl -X POST https://dev.shorturl.life/shorten \
+     -H "Content-Type: application/json" \
+     -d '{"url": "https://example.com"}'
+   ```
+
+4. **Update Chrome extension:**
+   - Update the API URL in the extension to use `https://dev.shorturl.life`
+   - Test all functionality with the new domain
+
+### DNS Propagation
+- DNS changes can take 5-60 minutes to propagate globally
+- Use `nslookup dev.shorturl.life` to verify DNS resolution
+- Certificate validation is automatic but may take a few minutes
+
+### Switching to Production
+Once dev testing is complete with `dev.shorturl.life`:
+
+1. Copy the custom domain configuration to prod (with domain set to `shorturl.life`)
+2. Apply to prod environment
+3. Update extension to use production domain
+
+---
+
 ## Infrastructure Changes (Terraform)
 
 When you modify Terraform configurations in `terraform/dev/`:

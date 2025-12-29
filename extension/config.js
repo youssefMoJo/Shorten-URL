@@ -1,7 +1,7 @@
-// API Configuration
+// API Configuration - DEV ENVIRONMENT
 const CONFIG = {
   api: {
-    baseUrl: 'https://kb5qj23lyl.execute-api.ca-central-1.amazonaws.com/dev',
+    baseUrl: 'https://dev.shorturl.life',
     endpoints: {
       signup: '/auth/signup',
       login: '/auth/login',
@@ -11,8 +11,8 @@ const CONFIG = {
     }
   },
   website: {
-    url: 'https://shorturl.life',
-    dashboardUrl: 'https://shorturl.life/dashboard'
+    url: 'https://dev.shorturl.life',
+    dashboardUrl: 'https://dev.shorturl.life/dashboard'
   },
   tokenExpiryBuffer: 30000, // 30 seconds before actual expiry
   maxHistoryItems: 10

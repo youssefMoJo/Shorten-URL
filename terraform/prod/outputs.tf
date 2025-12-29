@@ -146,3 +146,23 @@ output "custom_api_endpoints" {
     me_links = "https://${aws_api_gateway_domain_name.prod_domain.domain_name}/me/links"
   }
 }
+
+output "landing_page_bucket_name" {
+  description = "The name of the S3 bucket hosting the landing page"
+  value       = aws_s3_bucket.landing_page.id
+}
+
+output "landing_page_cloudfront_distribution_id" {
+  description = "The ID of the CloudFront distribution for the landing page"
+  value       = aws_cloudfront_distribution.landing_page.id
+}
+
+output "landing_page_cloudfront_domain" {
+  description = "The CloudFront domain name for the landing page"
+  value       = aws_cloudfront_distribution.landing_page.domain_name
+}
+
+output "landing_page_url" {
+  description = "The URL of the landing page"
+  value       = "https://www.shorturl.life"
+}

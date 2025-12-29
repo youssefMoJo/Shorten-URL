@@ -11,12 +11,9 @@ interface ShortenedLink {
 }
 
 export function Dashboard() {
-  const [url, setUrl] = useState("");
   const [links, setLinks] = useState<ShortenedLink[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [isFetchingLinks, setIsFetchingLinks] = useState(true);
-  const [error, setError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  const [_successMessage, setSuccessMessage] = useState("");
   const { getIdToken, logout } = useAuth();
 
   useEffect(() => {
@@ -58,56 +55,6 @@ export function Dashboard() {
       setLinks([]); // Set empty array on error
     } finally {
       setIsFetchingLinks(false);
-    }
-  };
-
-  const handleShorten = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setSuccessMessage("");
-
-    if (!url) {
-      setError("Please enter a URL");
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const token = await getIdToken();
-
-      const response = await fetch(
-        `${config.api.baseUrl}${config.api.endpoints.shorten}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ original_url: url }),
-        }
-      );
-
-      if (!response.ok) {
-        // If 401 Unauthorized, token has expired - force logout
-        if (response.status === 401) {
-          console.error('Session expired. Logging out...');
-          logout();
-          return;
-        }
-        throw new Error("Failed to shorten URL");
-      }
-
-      await response.json();
-      setSuccessMessage("Link shortened successfully!");
-      setUrl("");
-
-      // Refresh the links list
-      await fetchUserLinks();
-    } catch (err) {
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setIsLoading(false);
     }
   };
 

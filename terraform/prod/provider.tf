@@ -31,3 +31,14 @@ provider "aws" {
     tags = var.tags
   }
 }
+
+# Additional provider for us-east-1 (required for CloudFront ACM certificates)
+provider "aws" {
+  alias   = "us_east_1"
+  region  = "us-east-1"
+  profile = "AWS youssefrafaat67"
+
+  default_tags {
+    tags = var.tags
+  }
+}

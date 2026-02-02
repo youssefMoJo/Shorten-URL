@@ -80,11 +80,7 @@ export const handler = async (event) => {
           "Access-Control-Allow-Origin": "*",
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          short_url: `https://shorturl.life/${existingShortCode}`,
-          short_code: existingShortCode,
-          existing: true, // Indicate this was a deduplicated response
-        }),
+        body: JSON.stringify(`https://shorturl.life/${existingShortCode}`),
       };
     }
 
@@ -146,10 +142,7 @@ export const handler = async (event) => {
         "Access-Control-Allow-Origin": "*",
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        short_url: `https://shorturl.life/${shortCode}`,
-        short_code: shortCode,
-      }),
+      body: JSON.stringify(`https://shorturl.life/${shortCode}`),
     };
   } catch (error) {
     console.error("Error:", error);

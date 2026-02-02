@@ -59,14 +59,16 @@ export function LandingPage() {
             throw new Error("Failed to shorten URL");
           }
           const retryData = await retryResponse.json();
-          setShortUrl(retryData.short_url);
+          // Handle both string response and object response
+          setShortUrl(typeof retryData === 'string' ? retryData : retryData.short_url);
           return;
         }
         throw new Error("Failed to shorten URL");
       }
 
       const data = await response.json();
-      setShortUrl(data.short_url);
+      // Handle both string response and object response
+      setShortUrl(typeof data === 'string' ? data : data.short_url);
     } catch (err) {
       setError("Something went wrong. Please try again.");
     } finally {

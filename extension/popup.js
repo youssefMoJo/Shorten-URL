@@ -85,7 +85,8 @@ async function getShortURL(longURL) {
 
     if (response.ok) {
       const data = await response.json();
-      return data.short_url;
+      // Handle both string response and object response
+      return typeof data === 'string' ? data : data.short_url;
     } else {
       return null;
     }
